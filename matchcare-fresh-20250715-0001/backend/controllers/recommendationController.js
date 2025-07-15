@@ -4,13 +4,21 @@ exports.getRecommendations = async (req, res) => {
   try {
     const { skinType, concerns = [], sensitivities = [] } = req.body;
     
+    const validSkinTypes = ['normal', 'dry', 'oily', 'combination'];
+    if (!validSkinTypes.includes(skinType?.toLowerCase())) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid skin type. Please select: normal, dry, oily, or combination.' 
+      });
+    }
+
     let products = await Product.findAll({
       include: [
         { model: Brand, attributes: ['name'] },
         { model: Ingredient, attributes: ['name'] }
       ]
     });
-
+    
     // Filter based on sensitivities
     let filteredProducts = products.filter(product => {
       for (const sensitivity of sensitivities) {

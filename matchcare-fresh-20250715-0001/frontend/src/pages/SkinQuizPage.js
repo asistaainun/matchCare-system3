@@ -4,6 +4,7 @@ import { useMutation } from 'react-query';
 import toast from 'react-hot-toast';
 import { apiService } from '../services/api';
 import ProductCard from '../components/Products/ProductCard';
+import SkinTypeAssessment from '../components/Quiz/SkinTypeAssessment';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
 export default function SkinQuizPage() {
@@ -25,12 +26,25 @@ export default function SkinQuizPage() {
     }
   );
 
-  const skinTypes = ['Normal', 'Dry', 'Oily', 'Combination', 'Sensitive'];
+  const skinTypes = ['Normal', 'Dry', 'Oily', 'Combination', "I'm not sure"];
   const concerns = ['Acne', 'Wrinkles', 'Dryness', 'Oiliness', 'Sensitivity', 'Dark Spots'];
   const sensitivities = ['Fragrance', 'Alcohol', 'Paraben', 'Sulfate'];
 
-  const handleSkinTypeChange = (type) => setQuizData({ ...quizData, skinType: type });
-  
+  const [showAssessment, setShowAssessment] = useState(false);
+
+  const handleSkinTypeChange = (type) => {
+  if (type === "I'm not sure") {
+    setShowAssessment(true);
+  } else {
+    setQuizData({ ...quizData, skinType: type });
+    }
+  };
+
+  const handleAssessmentComplete = (detectedSkinType) => {
+  setQuizData({ ...quizData, skinType: detectedSkinType });
+  setShowAssessment(false);
+  };
+
   const handleConcernToggle = (concern) => {
     const newConcerns = quizData.concerns.includes(concern)
       ? quizData.concerns.filter(c => c !== concern)
@@ -50,6 +64,14 @@ export default function SkinQuizPage() {
   const renderStep = () => {
     switch (step) {
       case 1:
+        if (showAssessment) {
+          return (
+            <div>
+              <h2 className="text-2xl font-bold mb-6 text-center">Let's determine your skin type</h2>
+              <SkinTypeAssessment onComplete={handleAssessmentComplete} />
+            </div>
+          );
+        }
         return (
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-6">What's your skin type?</h2>

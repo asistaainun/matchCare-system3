@@ -31,10 +31,28 @@ const ProductIngredient = sequelize.define('ProductIngredient', {
   is_key_ingredient: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 
+const UserProfile = sequelize.define('UserProfile', {
+  id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  skinType: { 
+    type: DataTypes.ENUM('normal', 'dry', 'oily', 'combination'), 
+    allowNull: false 
+  },
+  skinConcerns: { type: DataTypes.JSON, defaultValue: [] },
+  sensitivities: { type: DataTypes.JSON, defaultValue: [] },
+  sessionId: DataTypes.STRING // untuk guest users
+});
+
 // Associations
 Brand.hasMany(Product, { foreignKey: 'brand_id' });
 Product.belongsTo(Brand, { foreignKey: 'brand_id' });
 Product.belongsToMany(Ingredient, { through: ProductIngredient, foreignKey: 'product_id' });
 Ingredient.belongsToMany(Product, { through: ProductIngredient, foreignKey: 'ingredient_id' });
 
-module.exports = { sequelize, Brand, Product, Ingredient, ProductIngredient };
+module.exports = { 
+  sequelize, 
+  Brand, 
+  Product, 
+  Ingredient, 
+  ProductIngredient, 
+  UserProfile 
+};
