@@ -2,15 +2,15 @@ const { sequelize } = require('../models');
 
 async function resetDatabase() {
   try {
-    console.log('í´„ Resetting database...');
+    console.log('ï¿½ï¿½ï¿½ Resetting database...');
     
     // Drop and recreate all tables
     await sequelize.sync({ force: true });
     console.log('âœ… Database reset complete');
     
     // Import sample data
-    console.log('í³Š Importing sample data...');
-    require('./import-data.js');
+    console.log('ï¿½ï¿½ï¿½ Importing sample data...');
+    require('./import-csv-data.js');
     
   } catch (error) {
     console.error('âŒ Reset failed:', error.message);
