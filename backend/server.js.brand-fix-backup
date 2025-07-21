@@ -75,12 +75,12 @@ app.get('/api/products', async (req, res) => {
       whereClause[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
         { description: { [Op.iLike]: `%${search}%` } },
-        // brand search removed - use Brand relationship
+        { brand: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
     // Filters
-    // if (brand) - use Brand relationship with include
+    if (brand) whereClause.brand = { [Op.iLike]: `%${brand}%` };
     if (category) whereClause.main_category = { [Op.iLike]: `%${category}%` };
     if (alcohol_free === 'true') whereClause.alcohol_free = true;
     if (fragrance_free === 'true') whereClause.fragrance_free = true;
@@ -99,7 +99,7 @@ app.get('/api/products', async (req, res) => {
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
       attributes: [
-        'id', 'name', 'main_category', 'subcategory', 
+        'id', 'name', 'brand', 'main_category', 'subcategory', 
         'description',  'alcohol_free', 'fragrance_free', 
         'paraben_free', 'sulfate_free', 'silicone_free'
       ]
