@@ -16,7 +16,9 @@ const Product = sequelize.define('Product', {
   fragrance_free: { type: DataTypes.BOOLEAN, defaultValue: false },
   paraben_free: { type: DataTypes.BOOLEAN, defaultValue: false },
   sulfate_free: { type: DataTypes.BOOLEAN, defaultValue: false },
-  silicone_free: { type: DataTypes.BOOLEAN, defaultValue: false }
+  silicone_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  // ✅ PROFESSIONAL LITE: Add is_active to match schema
+  is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 
 const Ingredient = sequelize.define('Ingredient', {
@@ -39,7 +41,7 @@ const UserProfile = sequelize.define('UserProfile', {
   },
   skinConcerns: { type: DataTypes.JSON, defaultValue: [] },
   sensitivities: { type: DataTypes.JSON, defaultValue: [] },
-  sessionId: DataTypes.STRING // untuk guest users
+  sessionId: DataTypes.STRING
 });
 
 // Associations

@@ -1,0 +1,455 @@
+// backend/models/index.js
+// COMPLETE MODELS TO MATCH DATABASE SCHEMA
+
+const { sequelize } = require('../config/database');
+const { DataTypes } = require('sequelize');
+
+// ===== REFERENCE TABLES =====
+
+// 1. Brands
+const Brand = sequelize.define('Brand', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'brands',
+  timestamps: false
+});
+
+// 2. Product Categories
+const ProductCategory = sequelize.define('ProductCategory', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  parent_id: { type: DataTypes.INTEGER, references: { model: 'ProductCategory', key: 'id' } },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'product_categories',
+  timestamps: false
+});
+
+// 3. Skin Types
+const SkinType = sequelize.define('SkinType', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'skin_types',
+  timestamps: false
+});
+
+// 4. Skin Concerns
+const SkinConcern = sequelize.define('SkinConcern', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'skin_concerns',
+  timestamps: false
+});
+
+// 5. Allergen Types
+const AllergenType = sequelize.define('AllergenType', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  common_sources: DataTypes.TEXT,
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'allergen_types',
+  timestamps: false
+});
+
+// 6. Formulation Traits
+const FormulationTrait = sequelize.define('FormulationTrait', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false },
+  ontology_uri: DataTypes.STRING(255),
+  excludes_allergen_type_id: { type: DataTypes.INTEGER, references: { model: 'AllergenType', key: 'id' } },
+  description: DataTypes.TEXT,
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'formulation_traits',
+  timestamps: false
+});
+
+// 7. Ingredient Functions
+const IngredientFunction = sequelize.define('IngredientFunction', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'ingredient_functions',
+  timestamps: false
+});
+
+// 8. Ingredient Benefits
+const IngredientBenefit = sequelize.define('IngredientBenefit', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  display_name: DataTypes.STRING(100),
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'ingredient_benefits',
+  timestamps: false
+});
+
+// 9. Key Ingredient Types
+const KeyIngredientType = sequelize.define('KeyIngredientType', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  slug: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+  display_name: DataTypes.STRING(100),
+  description: DataTypes.TEXT,
+  category: DataTypes.STRING(50),
+  usage_notes: DataTypes.TEXT,
+  ontology_uri: DataTypes.STRING(255),
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'key_ingredient_types',
+  timestamps: false
+});
+
+// ===== MAIN TABLES =====
+
+// 10. Products - COMPLETE MODEL
+const Product = sequelize.define('Product', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(500), allowNull: false },
+  ontology_uri: DataTypes.STRING(255),
+  brand_id: { type: DataTypes.INTEGER, references: { model: 'Brand', key: 'id' } },
+  brand: DataTypes.STRING(255), // CSV brand name
+  product_url: DataTypes.TEXT,
+  product_type: DataTypes.STRING(100),
+  key_ingredients_csv: DataTypes.ARRAY(DataTypes.TEXT),
+  main_category: DataTypes.STRING(100), // CSV category
+  subcategory: DataTypes.STRING(100), // CSV subcategory  
+  main_category_id: { type: DataTypes.INTEGER, references: { model: 'ProductCategory', key: 'id' } },
+  subcategory_id: { type: DataTypes.INTEGER, references: { model: 'ProductCategory', key: 'id' } },
+  description: DataTypes.TEXT,
+  how_to_use: DataTypes.TEXT,
+  ingredient_list: DataTypes.TEXT, // Raw ingredients string
+  local_image_path: DataTypes.TEXT,
+  bpom_number: DataTypes.STRING(100),
+  
+  // Safety flags
+  alcohol_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  fragrance_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  paraben_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  sulfate_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  silicone_free: { type: DataTypes.BOOLEAN, defaultValue: false },
+  
+  // Meta
+  is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'products',
+  timestamps: false
+});
+
+// 11. Ingredients - COMPLETE MODEL  
+const Ingredient = sequelize.define('Ingredient', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+  ontology_uri: DataTypes.STRING(255),
+  
+  // Formulation properties
+  actual_functions: DataTypes.TEXT,
+  embedded_functions: DataTypes.TEXT, // JSON array
+  functional_categories: DataTypes.TEXT, // JSON array
+  is_key_ingredient: { type: DataTypes.BOOLEAN, defaultValue: false },
+  
+  // Usage and safety
+  usage_instructions: DataTypes.TEXT,
+  pregnancy_safe: DataTypes.BOOLEAN,
+  
+  // Formulation flags
+  alcohol_free: DataTypes.BOOLEAN,
+  fragrance_free: DataTypes.BOOLEAN,
+  silicone_free: DataTypes.BOOLEAN,
+  sulfate_free: DataTypes.BOOLEAN,
+  paraben_free: DataTypes.BOOLEAN,
+  
+  // Detailed information
+  explanation: DataTypes.TEXT,
+  benefit: DataTypes.TEXT,
+  safety: DataTypes.TEXT,
+  alternative_names: DataTypes.TEXT, // JSON array
+  what_it_does: DataTypes.TEXT, // ✅ TEXT not STRING!
+  
+  // Meta
+  is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'ingredients',
+  timestamps: false
+});
+
+// ===== JUNCTION TABLES =====
+
+// 12. Product-Ingredient Relationship
+const ProductIngredient = sequelize.define('ProductIngredient', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  product_id: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    references: { model: 'Product', key: 'id' }
+  },
+  ingredient_id: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    references: { model: 'Ingredient', key: 'id' }
+  },
+  position: DataTypes.INTEGER, // Position in ingredient list
+  is_key_ingredient: { type: DataTypes.BOOLEAN, defaultValue: false },
+  notes: DataTypes.TEXT,
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'product_ingredients',
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['product_id', 'ingredient_id']
+    }
+  ]
+});
+
+// 13. Ingredient Functions Mapping
+const IngredientFunctionMap = sequelize.define('IngredientFunctionMap', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  ingredient_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'Ingredient', key: 'id' }
+  },
+  function_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'IngredientFunction', key: 'id' }
+  }
+}, {
+  tableName: 'ingredient_functions_map',
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['ingredient_id', 'function_id']
+    }
+  ]
+});
+
+// 14. Ingredient Benefits Mapping
+const IngredientBenefitMap = sequelize.define('IngredientBenefitMap', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  ingredient_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'Ingredient', key: 'id' }
+  },
+  benefit_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'IngredientBenefit', key: 'id' }
+  },
+  effectiveness_rating: DataTypes.INTEGER
+}, {
+  tableName: 'ingredient_benefits_map',
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['ingredient_id', 'benefit_id']
+    }
+  ]
+});
+
+// ===== USER TABLES =====
+
+// 15. Users
+const User = sequelize.define('User', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  email: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+  password_hash: { type: DataTypes.STRING(255), allowNull: false },
+  first_name: DataTypes.STRING(100),
+  last_name: DataTypes.STRING(100),
+  email_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'users',
+  timestamps: false
+});
+
+// 16. User Profiles
+const UserProfile = sequelize.define('UserProfile', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  session_id: DataTypes.STRING(255), // For guest users
+  user_id: { 
+    type: DataTypes.INTEGER, 
+    references: { model: 'User', key: 'id' }
+  },
+  
+  // Skin Quiz Results
+  skin_type_id: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    references: { model: 'SkinType', key: 'id' }
+  },
+  skin_concerns: DataTypes.TEXT, // JSON array
+  
+  // Additional info
+  age_range: DataTypes.STRING(20),
+  gender: DataTypes.STRING(20),
+  
+  // Preferences
+  avoided_ingredients: DataTypes.TEXT, // JSON array
+  liked_ingredients: DataTypes.TEXT, // JSON array
+  
+  // Quiz metadata
+  quiz_version: DataTypes.STRING(20),
+  quiz_completed_at: DataTypes.DATE,
+  
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  updated_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'user_profiles',
+  timestamps: false
+});
+
+// 17. User Favorites
+const UserFavorite = sequelize.define('UserFavorite', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  session_id: DataTypes.STRING(255), // For guest users
+  user_id: DataTypes.INTEGER, // For registered users
+  product_id: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    references: { model: 'Product', key: 'id' }
+  },
+  notes: DataTypes.TEXT,
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'user_favorites',
+  timestamps: false
+});
+
+// 18. Guest Sessions
+const GuestSession = sequelize.define('GuestSession', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  session_id: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+  ip_address: DataTypes.INET,
+  user_agent: DataTypes.TEXT,
+  expires_at: DataTypes.DATE,
+  converted_to_user_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: 'User', key: 'id' }
+  },
+  created_at: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  tableName: 'guest_sessions',
+  timestamps: false
+});
+
+// ===== ASSOCIATIONS =====
+
+// Brand associations
+Brand.hasMany(Product, { foreignKey: 'brand_id' });
+Product.belongsTo(Brand, { foreignKey: 'brand_id' });
+
+// Product Category associations  
+ProductCategory.hasMany(ProductCategory, { as: 'children', foreignKey: 'parent_id' });
+ProductCategory.belongsTo(ProductCategory, { as: 'parent', foreignKey: 'parent_id' });
+ProductCategory.hasMany(Product, { as: 'mainCategoryProducts', foreignKey: 'main_category_id' });
+ProductCategory.hasMany(Product, { as: 'subcategoryProducts', foreignKey: 'subcategory_id' });
+Product.belongsTo(ProductCategory, { as: 'mainCategory', foreignKey: 'main_category_id' });
+Product.belongsTo(ProductCategory, { as: 'subcategory', foreignKey: 'subcategory_id' });
+
+// Product-Ingredient many-to-many
+Product.belongsToMany(Ingredient, { 
+  through: ProductIngredient, 
+  foreignKey: 'product_id',
+  otherKey: 'ingredient_id'
+});
+Ingredient.belongsToMany(Product, { 
+  through: ProductIngredient, 
+  foreignKey: 'ingredient_id',
+  otherKey: 'product_id'
+});
+
+// Direct associations for easier queries
+Product.hasMany(ProductIngredient, { foreignKey: 'product_id' });
+ProductIngredient.belongsTo(Product, { foreignKey: 'product_id' });
+ProductIngredient.belongsTo(Ingredient, { foreignKey: 'ingredient_id' });
+Ingredient.hasMany(ProductIngredient, { foreignKey: 'ingredient_id' });
+
+// Ingredient-Function many-to-many
+Ingredient.belongsToMany(IngredientFunction, {
+  through: IngredientFunctionMap,
+  foreignKey: 'ingredient_id'
+});
+IngredientFunction.belongsToMany(Ingredient, {
+  through: IngredientFunctionMap,
+  foreignKey: 'function_id'
+});
+
+// Ingredient-Benefit many-to-many
+Ingredient.belongsToMany(IngredientBenefit, {
+  through: IngredientBenefitMap,
+  foreignKey: 'ingredient_id'
+});
+IngredientBenefit.belongsToMany(Ingredient, {
+  through: IngredientBenefitMap,
+  foreignKey: 'benefit_id'
+});
+
+// User associations
+User.hasOne(UserProfile, { foreignKey: 'user_id' });
+UserProfile.belongsTo(User, { foreignKey: 'user_id' });
+UserProfile.belongsTo(SkinType, { foreignKey: 'skin_type_id' });
+SkinType.hasMany(UserProfile, { foreignKey: 'skin_type_id' });
+
+// User Favorites
+User.hasMany(UserFavorite, { foreignKey: 'user_id' });
+UserFavorite.belongsTo(User, { foreignKey: 'user_id' });
+UserFavorite.belongsTo(Product, { foreignKey: 'product_id' });
+Product.hasMany(UserFavorite, { foreignKey: 'product_id' });
+
+// Formulation Trait associations
+FormulationTrait.belongsTo(AllergenType, { foreignKey: 'excludes_allergen_type_id' });
+AllergenType.hasMany(FormulationTrait, { foreignKey: 'excludes_allergen_type_id' });
+
+// Export all models
+module.exports = { 
+  sequelize,
+  
+  // Reference tables
+  Brand, 
+  ProductCategory,
+  SkinType,
+  SkinConcern,
+  AllergenType,
+  FormulationTrait,
+  IngredientFunction,
+  IngredientBenefit,
+  KeyIngredientType,
+  
+  // Main tables
+  Product, 
+  Ingredient,
+  
+  // Junction tables
+  ProductIngredient,
+  IngredientFunctionMap,
+  IngredientBenefitMap,
+  
+  // User tables
+  User,
+  UserProfile,
+  UserFavorite,
+  GuestSession
+};

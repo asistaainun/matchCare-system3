@@ -17,7 +17,7 @@ export default function HomePage() {
               Want to know skincare that suits your skin type? Our AI-powered system analyzes your needs!
             </p>
             <Link to="/quiz" className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors">
-              Take Skin Quiz í·ª
+              Take Skin Quiz ï¿½ï¿½ï¿½
             </Link>
           </motion.div>
         </div>
