@@ -27,213 +27,335 @@ class MatchCareImporter {
 
     // 1. Import Brands (FIXED: Better conflict handling)
     async importBrands() {
-        console.log('📋 Importing brands...');
+    console.log('📋 Importing brands...');
+    
+    return new Promise((resolve) => {
+        const brands = [];
+        const filePath = this.getFilePath('brands.csv');
         
-        return new Promise((resolve) => {
-            const brands = [];
-            const filePath = this.getFilePath('brands.csv');
-            
-            console.log(`🔍 Looking for brands.csv at: ${filePath}`);
-            
-            if (!fs.existsSync(filePath)) {
-                console.log(`⚠️  brands.csv not found - skipping`);
-                resolve();
-                return;
-            }
+        console.log(`🔍 Looking for brands.csv at: ${filePath}`);
+        
+        if (!fs.existsSync(filePath)) {
+            console.log(`⚠️  brands.csv not found - skipping`);
+            resolve();
+            return;
+        }
 
-            fs.createReadStream(filePath)
-                .pipe(csv())
-                .on('data', (row) => {
-                    // Debug: Show first few rows
-                    if (brands.length < 3) {
-                        console.log(`📋 Sample row ${brands.length + 1}:`, JSON.stringify(row));
+        fs.createReadStream(filePath)
+            .pipe(csv({
+                skipEmptyLines: true,
+                // Handle BOM and encoding issues
+                mapHeaders: ({ header }) => {
+                    // Remove BOM if present and clean header
+                    return header.replace(/^\uFEFF/, '').trim();
+                }
+            }))
+            .on('data', (row) => {
+                // Debug: Show first few rows
+                if (brands.length < 3) {
+                    console.log(`📋 Sample row ${brands.length + 1}:`, JSON.stringify(row));
+                }
+                
+                // SOLUTION: Use multiple access methods
+                let brandName = row.name || 
+                               row.Name || 
+                               row.brand || 
+                               row.Brand ||
+                               row[Object.keys(row)[0]]; // Fallback to first value
+                
+                // Clean the brand name
+                if (brandName && typeof brandName === 'string') {
+                    brandName = brandName.replace(/^\uFEFF/, '').trim(); // Remove BOM
+                    if (brandName) {
+                        brands.push(brandName);
+                        console.log(`✅ Added brand: ${brandName} (total: ${brands.length})`);
+                    }
+                }
+            })
+            .on('end', async () => {
+                try {
+                    console.log(`📊 Parsed ${brands.length} brands from CSV`);
+                    console.log('🔝 First 5 brands:', brands.slice(0, 5));
+                    
+                    if (brands.length === 0) {
+                        console.log('❌ No brands found in CSV!');
+                        resolve();
+                        return;
                     }
                     
-                    if (row.name && row.name.trim()) {
-                        brands.push(row.name.trim());
-                    }
-                })
-                .on('end', async () => {
-                    try {
-                        console.log(`📊 Parsed ${brands.length} brands from CSV`);
-                        console.log('🔝 First 5 brands:', brands.slice(0, 5));
-                        
-                        if (brands.length === 0) {
-                            console.log('❌ No brands found in CSV!');
-                            resolve();
-                            return;
-                        }
-                        
-                        let insertCount = 0;
-                        let existingCount = 0;
-                        
-                        for (const brand of brands) {
-                            try {
-                                // Check if brand already exists
-                                const existingBrand = await pool.query(
-                                    'SELECT id FROM brands WHERE name = $1',
+                    let insertCount = 0;
+                    let existingCount = 0;
+                    
+                    for (const brand of brands) {
+                        try {
+                            // Check if brand already exists
+                            const existingBrand = await pool.query(
+                                'SELECT id FROM brands WHERE name = $1',
+                                [brand]
+                            );
+                            
+                            if (existingBrand.rows.length > 0) {
+                                existingCount++;
+                            } else {
+                                // Insert new brand
+                                const result = await pool.query(
+                                    'INSERT INTO brands (name) VALUES ($1) RETURNING id',
                                     [brand]
                                 );
-                                
-                                if (existingBrand.rows.length > 0) {
-                                    existingCount++;
-                                } else {
-                                    // Insert new brand
-                                    const result = await pool.query(
-                                        'INSERT INTO brands (name) VALUES ($1) RETURNING id',
-                                        [brand]
-                                    );
-                                    if (result.rows.length > 0) {
-                                        insertCount++;
-                                    }
+                                if (result.rows.length > 0) {
+                                    insertCount++;
                                 }
-                            } catch (error) {
-                                this.errors.push(`Brand insert error: ${brand} - ${error.message}`);
                             }
+                        } catch (error) {
+                            this.errors.push(`Brand insert error: ${brand} - ${error.message}`);
                         }
-                        
-                        this.stats.brands = insertCount;
-                        this.stats.brandsExisting = existingCount;
-                        console.log(`✅ Imported ${insertCount} new brands, ${existingCount} already existed (${brands.length} total processed)`);
-                        
-                        // Verify total brands in database
-                        const totalBrands = await pool.query('SELECT COUNT(*) FROM brands');
-                        console.log(`📈 Total brands in database: ${totalBrands.rows[0].count}`);
-                        
-                        resolve();
-                    } catch (error) {
-                        console.error('Error importing brands:', error.message);
-                        resolve();
                     }
-                })
-                .on('error', (error) => {
-                    console.error('Error reading brands.csv:', error.message);
+                    
+                    this.stats.brands = insertCount;
+                    this.stats.brandsExisting = existingCount;
+                    console.log(`✅ Imported ${insertCount} new brands, ${existingCount} already existed (${brands.length} total processed)`);
+                    
+                    // Verify total brands in database
+                    const totalBrands = await pool.query('SELECT COUNT(*) FROM brands');
+                    console.log(`📈 Total brands in database: ${totalBrands.rows[0].count}`);
+                    
                     resolve();
-                });
-        });
-    }
+                } catch (error) {
+                    console.error('Error importing brands:', error.message);
+                    this.stats.brands = 0;
+                    resolve();
+                }
+            })
+            .on('error', (error) => {
+                console.error('Error reading brands.csv:', error.message);
+                this.stats.brands = 0;
+                resolve();
+            });
+    });
+}
 
     // 2. Import Products (Enhanced with better brand checking)
     async importProducts() {
-        console.log('📋 Importing products (this may take a while)...');
+    console.log('📋 Importing products (this may take a while)...');
+    
+    return new Promise((resolve) => {
+        const products = [];
+        const filePath = this.getFilePath('new_final_corrected_matchcare_data.csv');
         
-        return new Promise((resolve) => {
-            const products = [];
-            const filePath = this.getFilePath('new_final_corrected_matchcare_data.csv');
-            
-            if (!fs.existsSync(filePath)) {
-                console.log(`❌ new_final_corrected_matchcare_data.csv not found!`);
-                resolve();
-                return;
-            }
+        if (!fs.existsSync(filePath)) {
+            console.log(`❌ new_final_corrected_matchcare_data.csv not found!`);
+            resolve();
+            return;
+        }
 
-            let count = 0;
-            let skipped = 0;
-            
-            fs.createReadStream(filePath)
-                .pipe(csv())
-                .on('data', (row) => {
-                    if (row['Product Name'] && row['Brand']) {
-                        products.push({
-                            productUrl: row['Product URL'] || '',
-                            name: row['Product Name'].trim(),
-                            brand: row['Brand'].trim(),
-                            productType: row['Product Type'] || '',
-                            description: row['Description'] || '',
-                            howToUse: row['How to Use'] || '',
-                            ingredientList: row['IngredientList'] || '',
-                            imageUrls: row['Image URLs'] || '',
-                            localImagePath: row['Local Image Path'] || '',
-                            bpomNumber: row['BPOM Number'] || '',
-                            keyIngredients: row['Key_Ingredients'] || '',
-                            alcoholFree: row['alcohol_free'] === 'true',
-                            fragranceFree: row['fragrance_free'] === 'true',
-                            parabenFree: row['paraben_free'] === 'true',
-                            sulfateFree: row['sulfate_free'] === 'true',
-                            siliconeFree: row['silicone_free'] === 'true',
-                            mainCategory: row['Main_Category'] || '',
-                            subcategory: row['Subcategory'] || '',
-                            categorizationConfidence: row['Categorization_Confidence'] || null
-                        });
-                    }
-                })
-                .on('end', async () => {
+        fs.createReadStream(filePath)
+            .pipe(csv({
+                skipEmptyLines: true,
+                mapHeaders: ({ header }) => header.replace(/^\uFEFF/, '').trim()
+            }))
+            .on('data', (row) => {
+                // Use dynamic access with multiple fallbacks
+                const productName = row['Product Name'] || 
+                                   row['product name'] || 
+                                   row['Product_Name'] ||
+                                   row[Object.keys(row).find(k => k.toLowerCase().includes('product') && k.toLowerCase().includes('name'))];
+                
+                const brand = row['Brand'] || 
+                             row['brand'] || 
+                             row[Object.keys(row).find(k => k.toLowerCase().includes('brand'))];
+
+                if (productName && brand && 
+                    typeof productName === 'string' && typeof brand === 'string' && 
+                    productName.trim() && brand.trim()) {
+                    
+                    products.push({
+                        productUrl: row['Product URL'] || '',
+                        name: productName.trim(),
+                        brand: brand.trim(),
+                        productType: row['Product Type'] || '',
+                        description: row['Description'] || '',
+                        howToUse: row['How to Use'] || '',
+                        ingredientList: row['IngredientList'] || '',
+                        imageUrls: row['Image URLs'] || '',
+                        localImagePath: row['Local Image Path'] || '',
+                        bpomNumber: row['BPOM Number'] || '',
+                        keyIngredients: row['Key_Ingredients'] || '',
+                        alcoholFree: row['alcohol_free'] === 'true',
+                        fragranceFree: row['fragrance_free'] === 'true',
+                        parabenFree: row['paraben_free'] === 'true',
+                        sulfateFree: row['sulfate_free'] === 'true',
+                        siliconeFree: row['silicone_free'] === 'true',
+                        mainCategory: row['Main_Category'] || '',
+                        subcategory: row['Subcategory'] || '',
+                        categorizationConfidence: parseInt(row['Categorization_Confidence']) || null
+                    });
+                }
+            })
+            .on('end', async () => {
+                try {
                     console.log(`📊 Parsed ${products.length} products from CSV`);
                     
-                    // Check available brands first
-                    const availableBrands = await pool.query('SELECT name FROM brands');
-                    const brandSet = new Set(availableBrands.rows.map(b => b.name));
-                    console.log(`🏢 Available brands in database: ${brandSet.size}`);
+                    // Get existing brands ONCE and create a Map for fast lookup
+                    const existingBrands = await pool.query('SELECT id, name FROM brands');
+                    const brandMap = new Map();
+                    existingBrands.rows.forEach(brand => {
+                        brandMap.set(brand.name, brand.id);
+                    });
+                    console.log(`🏢 Available brands in database: ${brandMap.size}`);
                     
-                    for (let i = 0; i < products.length; i++) {
-                        const product = products[i];
-                        try {
-                            // Find brand_id
-                            const brandResult = await pool.query(
-                                'SELECT id FROM brands WHERE name = $1',
-                                [product.brand]
-                            );
-                            const brandId = brandResult.rows[0]?.id;
-
-                            if (!brandId) {
-                                if (skipped < 5) { // Only log first 5 missing brands
-                                    console.log(`⚠️  Brand not found: ${product.brand}`);
-                                }
-                                skipped++;
-                                continue;
-                            }
-
-                            // Find category_id from existing product_categories
-                            let categoryId = null;
-                            if (product.mainCategory) {
-                                const categoryResult = await pool.query(
-                                    'SELECT id FROM product_categories WHERE name = $1',
-                                    [product.mainCategory]
+                    // Check what products already exist to avoid duplicates
+                    const existingProducts = await pool.query('SELECT name, brand_id FROM products');
+                    const existingProductsSet = new Set();
+                    existingProducts.rows.forEach(product => {
+                        existingProductsSet.add(`${product.name}|${product.brand_id}`);
+                    });
+                    console.log(`📦 Existing products in database: ${existingProducts.rows.length}`);
+                    
+                    // Identify missing brands first
+                    const productBrands = new Set(products.map(p => p.brand));
+                    const missingBrands = [...productBrands].filter(brand => !brandMap.has(brand));
+                    
+                    if (missingBrands.length > 0) {
+                        console.log(`🔧 Found ${missingBrands.length} missing brands, creating them...`);
+                        console.log(`📝 Missing brands: ${missingBrands.slice(0, 10).join(', ')}${missingBrands.length > 10 ? '...' : ''}`);
+                        
+                        // Create missing brands in batch
+                        for (const brand of missingBrands) {
+                            try {
+                                const result = await pool.query(
+                                    'INSERT INTO brands (name) VALUES ($1) ON CONFLICT (name) DO NOTHING RETURNING id',
+                                    [brand]
                                 );
-                                categoryId = categoryResult.rows[0]?.id;
+                                if (result.rows.length > 0) {
+                                    brandMap.set(brand, result.rows[0].id);
+                                } else {
+                                    // Brand already exists, get its ID
+                                    const existingBrand = await pool.query('SELECT id FROM brands WHERE name = $1', [brand]);
+                                    if (existingBrand.rows.length > 0) {
+                                        brandMap.set(brand, existingBrand.rows[0].id);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`❌ Error creating brand ${brand}:`, error.message);
                             }
-
-                            const result = await pool.query(`
-                                INSERT INTO products 
-                                (product_url, name, brand_id, brand, product_type, description, how_to_use,
-                                 ingredient_list, local_image_path, bpom_number, key_ingredients_csv,
-                                 alcohol_free, fragrance_free, paraben_free, sulfate_free,
-                                 silicone_free, main_category, subcategory, main_category_id)
-                                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-                                ON CONFLICT (name, brand_id) DO NOTHING RETURNING id
-                            `, [
-                                product.productUrl, product.name, brandId, product.brand,
-                                product.productType, product.description, product.howToUse,
-                                product.ingredientList, product.localImagePath, product.bpomNumber,
-                                product.keyIngredients ? `{${product.keyIngredients}}` : null,
-                                product.alcoholFree, product.fragranceFree,
-                                product.parabenFree, product.sulfateFree, product.siliconeFree,
-                                product.mainCategory, product.subcategory, categoryId
-                            ]);
-                            
-                            if (result.rows.length > 0) count++;
-
-                            // Progress indicator
-                            if (i % 500 === 0 && i > 0) {
-                                console.log(`✅ Processed ${i}/${products.length} products... (${count} inserted, ${skipped} skipped)`);
-                            }
-                        } catch (error) {
-                            this.errors.push(`Product insert error: ${product.name} - ${error.message}`);
-                            skipped++;
                         }
+                        console.log(`✅ Updated brand map, now has ${brandMap.size} brands`);
                     }
                     
-                    this.stats.products = count;
+                    // Process products in chunks to avoid memory/timeout issues
+                    const CHUNK_SIZE = 50; // Smaller chunks for better error handling
+                    let insertCount = 0;
+                    let skipped = 0;
+                    let duplicates = 0;
+                    
+                    console.log(`🔄 Processing ${products.length} products in chunks of ${CHUNK_SIZE}...`);
+                    
+                    for (let i = 0; i < products.length; i += CHUNK_SIZE) {
+                        const chunk = products.slice(i, i + CHUNK_SIZE);
+                        console.log(`📦 Processing chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(products.length/CHUNK_SIZE)} (products ${i + 1}-${Math.min(i + CHUNK_SIZE, products.length)})`);
+                        
+                        // Process each product in the chunk
+                        for (const product of chunk) {
+                            try {
+                                const brandId = brandMap.get(product.brand);
+
+                                if (!brandId) {
+                                    if (skipped < 10) { // Only log first 10 missing brands
+                                        console.log(`⚠️  Brand not found in map: ${product.brand}`);
+                                    }
+                                    skipped++;
+                                    continue;
+                                }
+
+                                // Check if product already exists
+                                const productKey = `${product.name}|${brandId}`;
+                                if (existingProductsSet.has(productKey)) {
+                                    duplicates++;
+                                    continue;
+                                }
+
+                                // ✅ FIXED: Remove ON CONFLICT clause completely
+                                const result = await pool.query(`
+                                    INSERT INTO products (
+                                        product_url, name, brand_id, product_type, description,
+                                        how_to_use, ingredient_list, local_image_path,
+                                        bpom_number, main_category, subcategory, 
+                                        alcohol_free, fragrance_free, paraben_free, 
+                                        sulfate_free, silicone_free, is_active
+                                    ) VALUES (
+                                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 
+                                        $11, $12, $13, $14, $15, $16, true
+                                    ) RETURNING id
+                                `, [
+                                    product.productUrl, 
+                                    product.name,                    
+                                    brandId, 
+                                    product.productType,
+                                    product.description, 
+                                    product.howToUse, 
+                                    product.ingredientList,
+                                    product.localImagePath,          
+                                    product.bpomNumber,
+                                    product.mainCategory,            
+                                    product.subcategory,             
+                                    product.alcoholFree, 
+                                    product.fragranceFree,
+                                    product.parabenFree, 
+                                    product.sulfateFree, 
+                                    product.siliconeFree
+                                ]);
+
+                                if (result.rows.length > 0) {
+                                    insertCount++;
+                                    // Add to existing set to prevent future duplicates in this session
+                                    existingProductsSet.add(productKey);
+                                }
+
+                            } catch (error) {
+                                if (error.message.includes('duplicate key') || error.message.includes('already exists')) {
+                                    duplicates++;
+                                } else {
+                                    if (skipped < 10) { // Only log first 10 errors
+                                        console.error(`❌ Error inserting product ${product.name}:`, error.message);
+                                    }
+                                    skipped++;
+                                }
+                            }
+                        }
+                        
+                        // Show progress after each chunk
+                        console.log(`✅ Chunk completed. Progress: ${insertCount} inserted, ${duplicates} duplicates, ${skipped} errors`);
+                        
+                        // Small delay to prevent overwhelming the database
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                    
+                    this.stats.products = insertCount;
                     this.stats.productsSkipped = skipped;
-                    console.log(`✅ Imported ${count} products (${skipped} skipped, ${products.length} total processed)`);
+                    this.stats.productsDuplicates = duplicates;
+                    
+                    console.log(`✅ Imported ${insertCount} products (${duplicates} duplicates, ${skipped} errors, ${products.length} total processed)`);
+                    
+                    // Verify total products in database
+                    const totalProducts = await pool.query('SELECT COUNT(*) FROM products');
+                    console.log(`📈 Total products in database: ${totalProducts.rows[0].count}`);
+                    
                     resolve();
-                })
-                .on('error', (error) => {
-                    console.error('Error reading products CSV:', error.message);
+                } catch (error) {
+                    console.error('❌ Error importing products:', error.message);
+                    console.error('❌ Stack trace:', error.stack);
+                    this.stats.products = 0;
                     resolve();
-                });
-        });
-    }
+                }
+            })
+            .on('error', (error) => {
+                console.error('❌ Error reading products CSV:', error.message);
+                this.stats.products = 0;
+                resolve();
+            });
+    });
+}
+
 
     // 3. Import Ingredients (Keep existing - already working)
     async importIngredients() {
