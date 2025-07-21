@@ -10,148 +10,111 @@ const pool = new Pool({
 });
 
 async function checkDatabaseStatus() {
-    const client = await pool.connect();
+    console.log('🔍 Database Status Check\n');
     
     try {
-        console.log('🔍 Checking Database Status...\n');
+        // 1. Test connection
+        const client = await pool.connect();
+        console.log('✅ Database connection successful');
         
-        // 1. Check if products table exists and its structure
-        console.log('📋 Products Table Structure:');
-        console.log('═'.repeat(50));
-        
-        const productsColumns = await client.query(`
+        // 2. Check products table structure
+        const columns = await client.query(`
             SELECT column_name, data_type, is_nullable
             FROM information_schema.columns 
-            WHERE table_name = 'products'
+            WHERE table_name = 'products' AND table_schema = 'public'
             ORDER BY ordinal_position
         `);
         
-        if (productsColumns.rows.length === 0) {
-            console.log('❌ Products table does not exist!');
-            return;
-        }
+        console.log('\n📋 Products Table Columns:');
+        const columnNames = columns.rows.map(row => row.column_name);
+        columnNames.forEach(col => console.log(`   - ${col}`));
         
-        productsColumns.rows.forEach(col => {
-            console.log(`  ${col.column_name}: ${col.data_type} (${col.is_nullable === 'YES' ? 'nullable' : 'not null'})`);
-        });
-        
-        // 2. Check if product_categories table exists
-        console.log('\n📋 Product Categories Table:');
-        console.log('═'.repeat(50));
-        
-        const categoriesTableExists = await client.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'product_categories'
-            )
-        `);
-        
-        if (categoriesTableExists.rows[0].exists) {
-            const categoriesCount = await client.query('SELECT COUNT(*) FROM product_categories');
-            console.log(`✅ Product_categories table exists with ${categoriesCount.rows[0].count} categories`);
-            
-            // Show some categories
-            const sampleCategories = await client.query(`
-                SELECT name, parent_id FROM product_categories LIMIT 10
-            `);
-            console.log('Sample categories:');
-            sampleCategories.rows.forEach(cat => {
-                console.log(`  - ${cat.name} ${cat.parent_id ? '(subcategory)' : '(main category)'}`);
-            });
-        } else {
-            console.log('❌ Product_categories table does not exist');
-        }
-        
-        // 3. Check products data
-        console.log('\n📊 Products Data Analysis:');
-        console.log('═'.repeat(50));
-        
-        const productsStats = await client.query(`
+        // 3. Check data status
+        const stats = await client.query(`
             SELECT 
                 COUNT(*) as total_products,
-                COUNT(main_category) as has_main_category_string,
-                COUNT(subcategory) as has_subcategory_string,
-                COUNT(main_category_id) as has_main_category_id,
-                COUNT(subcategory_id) as has_subcategory_id
+                COUNT(name) as has_name,
+                COUNT(brand_id) as has_brand,
+                COUNT(main_category) as has_main_category,
+                COUNT(subcategory) as has_subcategory,
+                COUNT(key_ingredients_csv) as has_key_ingredients,
+                COUNT(product_url) as has_product_url,
+                COUNT(bpom_number) as has_bpom_number
             FROM products
         `);
         
-        const stats = productsStats.rows[0];
-        console.log(`Total products: ${stats.total_products}`);
-        console.log(`Products with main_category (string): ${stats.has_main_category_string}`);
-        console.log(`Products with subcategory (string): ${stats.has_subcategory_string}`);
-        console.log(`Products with main_category_id: ${stats.has_main_category_id || 0}`);
-        console.log(`Products with subcategory_id: ${stats.has_subcategory_id || 0}`);
+        console.log('\n📊 Data Population:');
+        const stat = stats.rows[0];
+        console.log(`   Total Products: ${stat.total_products}`);
+        console.log(`   Has Name: ${stat.has_name}`);
+        console.log(`   Has Brand: ${stat.has_brand}`);
+        console.log(`   Has Main Category: ${stat.has_main_category}`);
+        console.log(`   Has Subcategory: ${stat.has_subcategory}`);
+        console.log(`   Has Key Ingredients: ${stat.has_key_ingredients}`);
+        console.log(`   Has Product URL: ${stat.has_product_url}`);
+        console.log(`   Has BPOM Number: ${stat.has_bpom_number}`);
         
-        // 4. Show unique categories from string columns
-        if (parseInt(stats.has_main_category_string) > 0) {
-            console.log('\n📋 Unique Main Categories (from string column):');
-            const uniqueMainCategories = await client.query(`
-                SELECT main_category, COUNT(*) as count
-                FROM products 
-                WHERE main_category IS NOT NULL 
-                GROUP BY main_category 
-                ORDER BY count DESC
-            `);
-            
-            uniqueMainCategories.rows.forEach(cat => {
-                console.log(`  - ${cat.main_category}: ${cat.count} products`);
-            });
-        }
+        // 4. Check for required columns
+        const requiredColumns = [
+            'main_category', 'subcategory', 'key_ingredients_csv', 
+            'image_urls', 'local_image_path', 'product_url', 'bpom_number'
+        ];
         
-        if (parseInt(stats.has_subcategory_string) > 0) {
-            console.log('\n📋 Unique Subcategories (from string column):');
-            const uniqueSubcategories = await client.query(`
-                SELECT subcategory, COUNT(*) as count
-                FROM products 
-                WHERE subcategory IS NOT NULL 
-                GROUP BY subcategory 
-                ORDER BY count DESC
-                LIMIT 15
-            `);
-            
-            uniqueSubcategories.rows.forEach(cat => {
-                console.log(`  - ${cat.subcategory}: ${cat.count} products`);
-            });
-        }
+        console.log('\n🔧 Required Columns Status:');
+        requiredColumns.forEach(col => {
+            const exists = columnNames.includes(col);
+            console.log(`   ${exists ? '✅' : '❌'} ${col}`);
+        });
         
-        // 5. Recommendations
-        console.log('\n💡 Recommendations:');
-        console.log('═'.repeat(50));
+        // 5. Sample data
+        const sampleData = await client.query(`
+            SELECT 
+                id, name, main_category, subcategory
+            FROM products 
+            WHERE name IS NOT NULL
+            LIMIT 3
+        `);
         
-        if (!categoriesTableExists.rows[0].exists) {
-            console.log('1. ❌ Need to create product_categories table');
-            console.log('2. ❌ Need to add relational columns to products table');
-            console.log('3. ❌ Need to migrate string data to relational structure');
-        } else if (parseInt(stats.has_main_category_id) === 0) {
-            console.log('1. ✅ Product_categories table exists');
-            console.log('2. ❌ Need to migrate string data to relational IDs');
+        console.log('\n🧪 Sample Products:');
+        if (sampleData.rows.length > 0) {
+            console.table(sampleData.rows);
         } else {
-            console.log('1. ✅ Product_categories table exists');
-            console.log('2. ✅ Products have relational IDs');
-            console.log('3. ✅ Database structure looks good');
+            console.log('   No products found');
         }
         
-    } catch (error) {
-        console.error('❌ Error checking database:', error);
-    } finally {
+        // 6. Recommendations
+        console.log('\n💡 Recommendations:');
+        const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
+        
+        if (missingColumns.length > 0) {
+            console.log('   ❌ Some columns are missing - run safe-batch-update.js');
+        } else if (parseInt(stat.has_main_category) === 0) {
+            console.log('   ⚠️  Columns exist but no data - run safe-batch-update.js');
+        } else {
+            console.log('   ✅ Database looks good - update may have partially succeeded');
+            console.log('   💡 You can run safe-batch-update.js to fill remaining gaps');
+        }
+        
         client.release();
-    }
-}
-
-async function main() {
-    try {
-        await checkDatabaseStatus();
+        
     } catch (error) {
-        console.error('❌ Script failed:', error);
+        console.error('❌ Database check failed:', error.message);
     } finally {
         await pool.end();
     }
 }
 
+// Run the check
 if (require.main === module) {
-    main();
+    checkDatabaseStatus()
+        .then(() => {
+            console.log('\n✅ Database check completed');
+            process.exit(0);
+        })
+        .catch((error) => {
+            console.error('❌ Check failed:', error.message);
+            process.exit(1);
+        });
 }
 
 module.exports = { checkDatabaseStatus };
