@@ -416,7 +416,7 @@ CREATE TRIGGER update_users_updated_at
 -- ===== SEED REFERENCE DATA =====
 
 -- Insert fixed skin types
-INSERT INTO allergen_types (name, ontology_uri, description) VALUES 
+INSERT INTO allergen_types (name, ontology_uri, common_sources) VALUES 
 ('fragrance', 'http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Fragrance', 'Synthetic or natural fragrances'),
 ('alcohol', 'http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Alcohol', 'Drying alcohols like ethanol'),
 ('paraben', 'http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Paraben', 'Preservatives ending in -paraben'),
