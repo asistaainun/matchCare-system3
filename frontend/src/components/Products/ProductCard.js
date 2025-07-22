@@ -5,7 +5,7 @@ export default function ProductCard({ product }) {
   if (product.alcohol_free) badges.push({ text: 'Alcohol Free', color: 'green' });
   if (product.fragrance_free) badges.push({ text: 'Fragrance Free', color: 'blue' });
   if (product.paraben_free) badges.push({ text: 'Paraben Free', color: 'purple' });
-
+  
   const getBadgeClass = (color) => {
     const colors = {
       green: 'bg-green-100 text-green-800',
