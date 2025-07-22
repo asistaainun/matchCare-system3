@@ -5,10 +5,20 @@ const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
+const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Database connection pool
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'matchcare_fresh_db',
+  password: process.env.DB_PASSWORD || 'your_password',
+  port: process.env.DB_PORT || 5432,
+});
 
 // Security & Performance
 app.use(helmet());
@@ -43,7 +53,9 @@ app.get('/', (req, res) => {
       product_detail: '/api/products/:id',
       ingredients: '/api/ingredients',
       brands: '/api/brands',
-      skin_quiz: '/api/user-profile',
+      quiz_start: '/api/quiz/start',
+      quiz_submit: '/api/quiz/submit',
+      quiz_data: '/api/quiz/reference-data',
       recommendations: '/api/recommendations [Week 4 ready]'
     },
     features: [
@@ -54,6 +66,177 @@ app.get('/', (req, res) => {
       'SPARQL integration foundation'
     ]
   });
+});
+
+// ===== QUIZ ENDPOINTS =====
+
+// Quiz start endpoint
+app.post('/api/quiz/start', async (req, res) => {
+  try {
+    const { v4: uuidv4 } = require('uuid');
+    console.log('🚀 Starting new quiz session...');
+    
+    // Generate unique session ID
+    const sessionId = uuidv4();
+    
+    // Create guest session record
+    await pool.query(`
+      INSERT INTO guest_sessions (session_id, created_at, expires_at)
+      VALUES ($1, NOW(), NOW() + INTERVAL '24 hours')
+      ON CONFLICT (session_id) DO NOTHING
+    `, [sessionId]);
+
+    console.log(`✅ Quiz session started: ${sessionId}`);
+
+    res.json({
+      success: true,
+      data: {
+        session_id: sessionId,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      },
+      message: 'Quiz session started successfully'
+    });
+
+  } catch (error) {
+    console.error('Start quiz error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to start quiz session',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Quiz reference data endpoint
+app.get('/api/quiz/reference-data', async (req, res) => {
+  try {
+    console.log('📋 Fetching quiz reference data...');
+
+    const [skinTypes, skinConcerns, allergenTypes] = await Promise.all([
+      pool.query('SELECT id, name FROM skin_types ORDER BY id'),
+      pool.query('SELECT id, name FROM skin_concerns ORDER BY id'),
+      pool.query('SELECT id, name FROM allergen_types ORDER BY id')
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        skin_types: skinTypes.rows,
+        skin_concerns: skinConcerns.rows,
+        allergen_types: allergenTypes.rows
+      },
+      message: 'Reference data fetched successfully'
+    });
+
+  } catch (error) {
+    console.error('Quiz reference data error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch reference data',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
+
+
+// Quiz submit endpoint
+app.post('/api/quiz/submit', async (req, res) => {
+  try {
+    const { session_id, skin_type, concerns, sensitivities } = req.body;
+    
+    console.log('📝 Quiz submit data:', { session_id, skin_type, concerns, sensitivities });
+
+    // Validate required fields
+    if (!session_id || !skin_type) {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID and skin type are required'
+      });
+    }
+
+    // Verify session exists
+    const sessionCheck = await pool.query(
+      'SELECT id FROM guest_sessions WHERE session_id = $1',
+      [session_id]
+    );
+
+    if (sessionCheck.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Invalid session ID'
+      });
+    }
+
+    // Get skin type ID
+    const skinTypeResult = await pool.query(
+      'SELECT id FROM skin_types WHERE name = $1',
+      [skin_type]
+    );
+
+    if (skinTypeResult.rows.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid skin type'
+      });
+    }
+
+    const skin_type_id = skinTypeResult.rows[0].id;
+
+    // Get concern IDs
+    let concern_ids = [];
+    if (concerns && concerns.length > 0) {
+      const concernsResult = await pool.query(
+        'SELECT id FROM skin_concerns WHERE name = ANY($1)',
+        [concerns]
+      );
+      concern_ids = concernsResult.rows.map(row => row.id);
+    }
+
+    // Process sensitivities
+    const fragrance_sensitivity = sensitivities?.includes('fragrance') || false;
+    const alcohol_sensitivity = sensitivities?.includes('alcohol') || false;
+    const silicone_sensitivity = sensitivities?.includes('silicone') || false;
+
+    // Insert quiz result
+    const result = await pool.query(`
+      INSERT INTO quiz_results (
+        session_id, 
+        skin_type_id, 
+        concern_ids, 
+        fragrance_sensitivity, 
+        alcohol_sensitivity, 
+        silicone_sensitivity
+      ) VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, completed_at
+    `, [
+      session_id,
+      skin_type_id,
+      concern_ids,
+      fragrance_sensitivity,
+      alcohol_sensitivity,
+      silicone_sensitivity
+    ]);
+
+    console.log('✅ Quiz submitted successfully:', result.rows[0]);
+
+    res.json({
+      success: true,
+      data: {
+        quiz_id: result.rows[0].id,
+        session_id: session_id,
+        completed_at: result.rows[0].completed_at
+      },
+      message: 'Quiz submitted successfully'
+    });
+
+  } catch (error) {
+    console.error('Quiz submit error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to submit quiz',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
 });
 
 // ===== ONTOLOGY-READY API ENDPOINTS =====
@@ -74,13 +257,11 @@ app.get('/api/products', async (req, res) => {
       const { Op } = require('sequelize');
       whereClause[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
-        // brand search removed - use Brand relationship
+        { description: { [Op.iLike]: `%${search}%` } }
       ];
     }
 
     // Filters
-    // if (brand) - use Brand relationship with include
     if (category) whereClause.main_category = { [Op.iLike]: `%${category}%` };
     if (alcohol_free === 'true') whereClause.alcohol_free = true;
     if (fragrance_free === 'true') whereClause.fragrance_free = true;
@@ -314,47 +495,54 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     success: false, 
     message: `Route ${req.originalUrl} not found`,
-    available_endpoints: ['/', '/health', '/api/products', '/api/ingredients']
+    available_endpoints: [
+      '/', '/health', '/api/products', '/api/products/:id', 
+      '/api/ingredients', '/api/quiz/start', '/api/quiz/submit', 
+      '/api/quiz/reference-data'
+    ]
   });
 });
 
 // ===== SMART DATABASE CONNECTION =====
 async function startServer() {
   try {
-    console.log('��� Starting MatchCare Server - Professional Lite...');
+    console.log('🚀 Starting MatchCare Server - Professional Lite...');
+    
+    // Test database connection first
+    await pool.query('SELECT NOW()');
+    console.log('✅ Database connected successfully');
+    console.log(`📊 Database: ${process.env.DB_NAME || 'matchcare_fresh_db'}`);
     
     // Import models and test connection
     const { sequelize } = require('./models');
-    
-    // Test database connection
     await sequelize.authenticate();
-    console.log('✅ Database connected successfully');
-    console.log(`��� Database: ${process.env.DB_NAME || 'matchcare_fresh_db'}`);
+    console.log('✅ Sequelize models connected successfully');
     
     // ⚠️ CRITICAL: NO SYNC - Protects your existing data
-    console.log('���️ Database sync DISABLED - protecting existing data');
-    console.log('��� Using Professional Lite models matching existing schema');
-    console.log('��� Ontology mappings ready for SPARQL integration');
+    console.log('⚠️ Database sync DISABLED - protecting existing data');
+    console.log('🎯 Using Professional Lite models matching existing schema');
+    console.log('🔗 Ontology mappings ready for SPARQL integration');
     
     // Test basic query to verify models work
     try {
       const { Product } = require('./models');
       const testCount = await Product.count();
-      console.log(`��� Products in database: ${testCount}`);
+      console.log(`📦 Products in database: ${testCount}`);
       console.log('✅ Models working correctly with existing data');
     } catch (error) {
       console.warn('⚠️ Model test failed:', error.message);
-      console.log('��� Server will still start - check model definitions if needed');
+      console.log('🔄 Server will still start - check model definitions if needed');
     }
     
     // Start server
     const server = app.listen(PORT, () => {
-      console.log('��� MatchCare Server Started Successfully!');
-      console.log(`��� Server running on: http://localhost:${PORT}`);
-      console.log(`��� API Documentation: http://localhost:${PORT}/`);
-      console.log(`��� Health Check: http://localhost:${PORT}/health`);
-      console.log('��� Professional Lite - Ontology Ready!');
-      console.log('��� Ready for development progression to SPARQL!');
+      console.log('🎉 MatchCare Server Started Successfully!');
+      console.log(`🌐 Server running on: http://localhost:${PORT}`);
+      console.log(`📚 API Documentation: http://localhost:${PORT}/`);
+      console.log(`💚 Health Check: http://localhost:${PORT}/health`);
+      console.log(`🧪 Quiz Start: http://localhost:${PORT}/api/quiz/start`);
+      console.log('🎯 Professional Lite - Ontology Ready!');
+      console.log('🚀 Ready for development progression to SPARQL!');
     });
 
     // Graceful shutdown
@@ -363,24 +551,25 @@ async function startServer() {
       server.close(() => {
         console.log('Process terminated');
         if (sequelize) sequelize.close();
+        if (pool) pool.end();
       });
     });
 
   } catch (error) {
     console.error('❌ Server start failed:', error.message);
-    console.error('��� Error details:', error);
+    console.error('🔍 Error details:', error);
     
     // Helpful troubleshooting
     if (error.message.includes('connect ECONNREFUSED')) {
-      console.error('��� TIP: Make sure PostgreSQL is running on port 5432');
-      console.error('��� Try: brew services start postgresql  # or equivalent for your system');
+      console.error('💡 TIP: Make sure PostgreSQL is running on port 5432');
+      console.error('🔧 Try: brew services start postgresql  # or equivalent for your system');
     } else if (error.message.includes('database') && error.message.includes('does not exist')) {
-      console.error(`��� TIP: Database not found. Check: ${process.env.DB_NAME || 'matchcare_fresh_db'}`);
+      console.error(`💡 TIP: Database not found. Check: ${process.env.DB_NAME || 'matchcare_fresh_db'}`);
     } else if (error.message.includes('password authentication failed')) {
-      console.error('��� TIP: Check your database credentials in .env file');
+      console.error('💡 TIP: Check your database credentials in .env file');
     } else if (error.message.includes('VARCHAR') || error.message.includes('character varying')) {
-      console.error('��� TIP: This Professional Lite setup should fix the VARCHAR errors');
-      console.error('��� If still failing, restore backup and check model definitions');
+      console.error('💡 TIP: This Professional Lite setup should fix the VARCHAR errors');
+      console.error('🔧 If still failing, restore backup and check model definitions');
     }
     
     process.exit(1);

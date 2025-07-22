@@ -75,12 +75,12 @@ app.get('/api/products', async (req, res) => {
       whereClause[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
         { description: { [Op.iLike]: `%${search}%` } },
-        { brand: { [Op.iLike]: `%${search}%` } }
+        // brand search removed - use Brand relationship
       ];
     }
 
     // Filters
-    if (brand) whereClause.brand = { [Op.iLike]: `%${brand}%` };
+    // if (brand) - use Brand relationship with include
     if (category) whereClause.main_category = { [Op.iLike]: `%${category}%` };
     if (alcohol_free === 'true') whereClause.alcohol_free = true;
     if (fragrance_free === 'true') whereClause.fragrance_free = true;
@@ -92,15 +92,15 @@ app.get('/api/products', async (req, res) => {
         { 
           model: Brand, 
           as: 'Brand',
-          attributes: ['id', 'name', 'ontology_uri'] 
+          attributes: ['id', 'name'] 
         }
       ],
       limit: parseInt(limit),
       offset: parseInt(offset),
       order: [['created_at', 'DESC']],
       attributes: [
-        'id', 'name', 'brand', 'main_category', 'subcategory', 
-        'description', 'ontology_uri', 'alcohol_free', 'fragrance_free', 
+        'id', 'name', 'main_category', 'subcategory', 
+        'description',  'alcohol_free', 'fragrance_free', 
         'paraben_free', 'sulfate_free', 'silicone_free'
       ]
     });
@@ -138,13 +138,13 @@ app.get('/api/products/:id', async (req, res) => {
         { 
           model: Brand, 
           as: 'Brand',
-          attributes: ['id', 'name', 'ontology_uri'] 
+          attributes: ['id', 'name'] 
         },
         {
           model: Ingredient,
           as: 'Ingredients',
           attributes: [
-            'id', 'name', 'ontology_uri', 'what_it_does', 'explanation',
+            'id', 'name',  'what_it_does', 'explanation',
             'benefit', 'safety', 'is_key_ingredient', 'actual_functions',
             'alcohol_free', 'fragrance_free', 'paraben_free'
           ],
@@ -225,7 +225,7 @@ app.get('/api/ingredients', async (req, res) => {
     const ingredients = await Ingredient.findAll({
       where: whereClause,
       attributes: [
-        'id', 'name', 'ontology_uri', 'what_it_does', 'explanation',
+        'id', 'name',  'what_it_does', 'explanation',
         'benefit', 'safety', 'is_key_ingredient', 'actual_functions'
       ],
       limit: parseInt(limit),
@@ -268,7 +268,7 @@ app.post('/api/user-profile', async (req, res) => {
       include: [{ 
         model: SkinType, 
         as: 'SkinType',
-        attributes: ['name', 'ontology_uri'] 
+        attributes: ['name'] 
       }]
     });
 
@@ -298,6 +298,9 @@ app.get('/api/recommendations', async (req, res) => {
     note: 'Foundation complete for Apache Jena Fuseki integration'
   });
 });
+
+const quizRoutes = require('./routes/quiz');
+app.use(quizRoutes);
 
 // Error handling
 app.use((err, req, res, next) => {
