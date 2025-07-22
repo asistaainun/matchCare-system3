@@ -1,123 +1,58 @@
-// src/pages/QuizPage.js
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { useQuiz } from '../context/QuizContext';
-import { useQuizApi, useQuizInitialization, useQuizSubmission } from '../hooks/useQuizApi';
-
-// Components
-import QuizProgress from '../components/Quiz/QuizProgress';
-import SkinTypeSelector from '../components/Quiz/SkinTypeSelector';
-import SkinConcernSelector from '../components/Quiz/SkinConcernSelector';
-import SensitivitySelector from '../components/Quiz/SensitivitySelector';
-import QuizResults from '../components/Quiz/QuizResults';
+import LoadingSpinner from '../components/Common/LoadingSpinner';
 
 const QuizPage = () => {
-  const navigate = useNavigate();
-  const { 
-    currentStep, 
-    completed, 
-    nextStep, 
-    prevStep, 
-    resetQuiz,
-    error 
+  const {
+    currentStep,
+    totalSteps,
+    skinType,
+    concerns,
+    sensitivities,
+    referenceData,
+    isLoading,
+    error,
+    recommendations,
+    completed,
+    // Actions
+    startQuiz,
+    fetchReferenceData,
+    setSkinType,
+    toggleConcern,
+    toggleSensitivity,
+    submitQuiz,
+    fetchRecommendations,
+    nextStep,
+    prevStep,
+    canProceedToNext,
+    canGoBack,
+    resetQuiz
   } = useQuiz();
-  
-  const { initialized, initError, initializeQuiz } = useQuizInitialization();
-  const { handleSubmitQuiz, canSubmit, submissionError } = useQuizSubmission();
-  const [showResults, setShowResults] = useState(false);
 
-  // Initialize quiz on component mount
   useEffect(() => {
-    if (!initialized && !initError) {
-      initializeQuiz();
-    }
-  }, [initialized, initError, initializeQuiz]);
+    // Initialize quiz
+    const initializeQuiz = async () => {
+      await fetchReferenceData();
+      await startQuiz();
+    };
+    
+    initializeQuiz();
+  }, []);
 
-  // Handle quiz completion
-  useEffect(() => {
-    if (completed) {
-      setShowResults(true);
-    }
-  }, [completed]);
+  if (isLoading && !referenceData.skin_types.length) {
+    return <LoadingSpinner text="Loading quiz..." />;
+  }
 
-  const handleNext = () => {
-    nextStep();
-  };
-
-  const handlePrevious = () => {
-    prevStep();
-  };
-
-  const handleSubmit = async () => {
-    try {
-      await handleSubmitQuiz();
-      // Results will be shown automatically when completed state changes
-    } catch (error) {
-      console.error('Quiz submission failed:', error);
-      // Error handling is done in the hook
-    }
-  };
-
-  const handleStartOver = () => {
-    resetQuiz();
-    setShowResults(false);
-  };
-
-  const handleContinueBrowsing = () => {
-    navigate('/products');
-  };
-
-  // Render step content
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <SkinTypeSelector />;
-      case 2:
-        return <SkinConcernSelector />;
-      case 3:
-        return <SensitivitySelector />;
-      default:
-        return <SkinTypeSelector />;
-    }
-  };
-
-  // Loading state during initialization
-  if (!initialized && !initError) {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Preparing your quiz...
-          </h2>
-          <p className="text-gray-600">
-            Setting up your personalized skincare assessment
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (initError) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Oops! Something went wrong
-          </h2>
-          <p className="text-gray-600 mb-4">
-            {initError}
-          </p>
+          <div className="text-6xl mb-4">⚠️</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Quiz Error</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
           <button
-            onClick={initializeQuiz}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
           >
             Try Again
           </button>
@@ -126,81 +61,220 @@ const QuizPage = () => {
     );
   }
 
-  // Show results page
-  if (showResults) {
+  // Show results if completed
+  if (completed && recommendations.length > 0) {
     return (
-      <QuizResults 
-        onStartOver={handleStartOver}
-        onContinueBrowsing={handleContinueBrowsing}
-      />
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Your Skincare Recommendations ✨
+            </h1>
+            <p className="text-gray-600">
+              Based on your skin profile, here are our top picks for you:
+            </p>
+          </div>
+
+          <div className="grid gap-6">
+            {recommendations.map((product, index) => (
+              <div key={product.id} className="bg-white p-6 rounded-xl shadow-sm">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                      {product.name}
+                    </h3>
+                    <p className="text-gray-600">{product.brand} • {product.product_type}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-600">
+                      {product.match_score}%
+                    </div>
+                    <div className="text-sm text-gray-500">Match</div>
+                  </div>
+                </div>
+                
+                <p className="text-gray-700 mb-4">{product.description}</p>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-2">Why this matches you:</h4>
+                  <ul className="space-y-1">
+                    {product.reasons.map((reason, idx) => (
+                      <li key={idx} className="text-sm text-gray-700 flex items-start">
+                        <span className="text-blue-600 mr-2">•</span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-8">
+            <button
+              onClick={resetQuiz}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 mr-4"
+            >
+              Take Quiz Again
+            </button>
+            <button
+              onClick={() => window.location.href = '/products'}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
+            >
+              Browse All Products
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Progress Header */}
-      <QuizProgress 
-        onNext={handleNext}
-        onPrevious={handlePrevious}
-        onSubmit={handleSubmit}
-      />
-
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Error Display */}
-        {(error || submissionError) && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg"
-          >
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-              <span className="text-red-800 font-medium">
-                {error || submissionError}
-              </span>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Step Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-white rounded-lg shadow-sm p-8"
-          >
-            {renderCurrentStep()}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Help Text */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            Having trouble? You can always{' '}
-            <button 
-              onClick={() => navigate('/')}
-              className="text-blue-600 hover:text-blue-800 underline"
-            >
-              skip the quiz
-            </button>
-            {' '}and browse all products instead.
-          </p>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-2xl mx-auto px-4">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Step {currentStep} of {totalSteps}</span>
+            <span>{Math.round((currentStep / totalSteps) * 100)}% Complete</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Background Decoration */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-100 rounded-full opacity-20"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-100 rounded-full opacity-20"></div>
+        {/* Quiz Steps */}
+        <div className="bg-white p-8 rounded-xl shadow-sm">
+          {currentStep === 1 && (
+            <SkinTypeStep
+              skinType={skinType}
+              skinTypes={referenceData.skin_types}
+              onSelect={setSkinType}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <ConcernsStep
+              concerns={concerns}
+              skinConcerns={referenceData.skin_concerns}
+              onToggle={toggleConcern}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <SensitivitiesStep
+              sensitivities={sensitivities}
+              allergenTypes={referenceData.allergen_types}
+              onToggle={toggleSensitivity}
+            />
+          )}
+
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <button
+              onClick={prevStep}
+              disabled={!canGoBack()}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Back
+            </button>
+
+            {currentStep < totalSteps ? (
+              <button
+                onClick={nextStep}
+                disabled={!canProceedToNext()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next →
+              </button>
+            ) : (
+              <button
+                onClick={async () => {
+                  const result = await submitQuiz();
+                  if (result) {
+                    await fetchRecommendations();
+                  }
+                }}
+                disabled={!canProceedToNext() || isLoading}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Processing...' : 'Get Recommendations ✨'}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+// Quiz Step Components
+const SkinTypeStep = ({ skinType, skinTypes, onSelect }) => (
+  <div>
+    <h2 className="text-2xl font-bold text-gray-900 mb-4">What's your skin type?</h2>
+    <div className="space-y-3">
+      {skinTypes.map((type) => (
+        <button
+          key={type.id}
+          onClick={() => onSelect(type.name)}
+          className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
+            skinType === type.name
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="font-medium capitalize">{type.name}</div>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const ConcernsStep = ({ concerns, skinConcerns, onToggle }) => (
+  <div>
+    <h2 className="text-2xl font-bold text-gray-900 mb-4">What are your skin concerns?</h2>
+    <p className="text-gray-600 mb-6">Select all that apply (optional)</p>
+    <div className="grid grid-cols-2 gap-3">
+      {skinConcerns.map((concern) => (
+        <button
+          key={concern.id}
+          onClick={() => onToggle(concern.name)}
+          className={`p-3 text-left border-2 rounded-lg transition-colors ${
+            concerns.includes(concern.name)
+              ? 'border-blue-600 bg-blue-50 text-blue-700'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="font-medium capitalize">{concern.name.replace('_', ' ')}</div>
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const SensitivitiesStep = ({ sensitivities, allergenTypes, onToggle }) => (
+  <div>
+    <h2 className="text-2xl font-bold text-gray-900 mb-4">Do you have any known sensitivities?</h2>
+    <p className="text-gray-600 mb-6">Select any ingredients you're sensitive to (optional)</p>
+    <div className="space-y-3">
+      {allergenTypes.map((allergen) => (
+        <button
+          key={allergen.id}
+          onClick={() => onToggle(allergen.name)}
+          className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
+            sensitivities.includes(allergen.name)
+              ? 'border-red-600 bg-red-50 text-red-700'
+              : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <div className="font-medium capitalize">{allergen.name}</div>
+        </button>
+      ))}
+    </div>
+  </div>
+);
 
 export default QuizPage;

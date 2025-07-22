@@ -1,4 +1,3 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QuizProvider } from './context/QuizContext';
@@ -17,7 +16,7 @@ import Footer from './components/Layout/Footer';
 function App() {
   return (
     <Router>
-      <div className="App min-h-screen bg-gray-50">
+      <div className="App min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
         
         <main className="flex-1">
@@ -30,10 +29,7 @@ function App() {
               path="/quiz/*" 
               element={
                 <QuizProvider>
-                  <Routes>
-                    <Route index element={<QuizPage />} />
-                    <Route path="results" element={<QuizPage />} />
-                  </Routes>
+                  <QuizPage />
                 </QuizProvider>
               } 
             />
