@@ -11,8 +11,8 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import IngredientsPage from './pages/IngredientsPage';
 
 // Components
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
+import Navbar from './components/Layout/Navbar';
+import Footer from './components/Layout/Footer';
 
 function App() {
   return (
