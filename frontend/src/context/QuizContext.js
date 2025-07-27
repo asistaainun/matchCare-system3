@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useReducer } from 'react';
+// frontend/src/context/QuizContext.js
+// FIXED VERSION - Compatible dengan sistem yang sudah ada
+
+import React, { createContext, useContext, useReducer, useCallback } from 'react';
 
 const QuizContext = createContext();
 
-// Quiz state structure
+// Initial state - sesuai dengan struktur yang sudah ada
 const initialState = {
   // Session info
   sessionId: null,
@@ -11,11 +14,11 @@ const initialState = {
   
   // Quiz data
   skinType: null,
-  skinTypeMethod: 'self_selected', // 'self_selected' or 'assessment'
+  skinTypeMethod: 'self_selected',
   concerns: [],
   sensitivities: [],
   
-  // Reference data
+  // Reference data - IMPORTANT: initialize with empty arrays
   referenceData: {
     skin_types: [],
     skin_concerns: [],
@@ -30,7 +33,7 @@ const initialState = {
   completed: false
 };
 
-// Actions
+// Actions - sama seperti sebelumnya
 const quizActions = {
   SET_SESSION_ID: 'SET_SESSION_ID',
   SET_CURRENT_STEP: 'SET_CURRENT_STEP',
@@ -46,13 +49,14 @@ const quizActions = {
   TOGGLE_SENSITIVITY: 'TOGGLE_SENSITIVITY'
 };
 
-// Reducer
+// Reducer function
 function quizReducer(state, action) {
   switch (action.type) {
     case quizActions.SET_SESSION_ID:
       return {
         ...state,
-        sessionId: action.payload
+        sessionId: action.payload,
+        error: null
       };
       
     case quizActions.SET_CURRENT_STEP:
@@ -64,14 +68,14 @@ function quizReducer(state, action) {
     case quizActions.SET_SKIN_TYPE:
       return {
         ...state,
-        skinType: action.payload.skinType,
-        skinTypeMethod: action.payload.method || 'self_selected'
+        skinType: typeof action.payload === 'string' ? action.payload : action.payload.skinType,
+        skinTypeMethod: typeof action.payload === 'object' ? action.payload.method || 'self_selected' : 'self_selected'
       };
       
     case quizActions.SET_CONCERNS:
       return {
         ...state,
-        concerns: action.payload
+        concerns: Array.isArray(action.payload) ? action.payload : []
       };
       
     case quizActions.TOGGLE_CONCERN:
@@ -86,7 +90,7 @@ function quizReducer(state, action) {
     case quizActions.SET_SENSITIVITIES:
       return {
         ...state,
-        sensitivities: action.payload
+        sensitivities: Array.isArray(action.payload) ? action.payload : []
       };
       
     case quizActions.TOGGLE_SENSITIVITY:
@@ -101,13 +105,18 @@ function quizReducer(state, action) {
     case quizActions.SET_REFERENCE_DATA:
       return {
         ...state,
-        referenceData: action.payload
+        referenceData: {
+          skin_types: action.payload.skin_types || [],
+          skin_concerns: action.payload.skin_concerns || [],
+          allergen_types: action.payload.allergen_types || []
+        },
+        error: null
       };
       
     case quizActions.SET_LOADING:
       return {
         ...state,
-        isLoading: action.payload
+        isLoading: Boolean(action.payload)
       };
       
     case quizActions.SET_ERROR:
@@ -121,7 +130,7 @@ function quizReducer(state, action) {
       return {
         ...state,
         quizId: action.payload.quiz_id,
-        recommendations: action.payload.recommendations || [],
+        recommendations: Array.isArray(action.payload.recommendations) ? action.payload.recommendations : [],
         completed: true,
         isLoading: false,
         error: null
@@ -142,8 +151,176 @@ function quizReducer(state, action) {
 export function QuizProvider({ children }) {
   const [state, dispatch] = useReducer(quizReducer, initialState);
   
-  // Actions
+  // API Base URL
+  const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+  
+  // Helper functions
+  const setLoading = useCallback((loading) => {
+    dispatch({ type: quizActions.SET_LOADING, payload: loading });
+  }, []);
+  
+  const setError = useCallback((error) => {
+    dispatch({ type: quizActions.SET_ERROR, payload: error });
+  }, []);
+  
+  // API Functions - ADD MISSING FUNCTIONS
+  const startQuiz = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🚀 Starting quiz session...');
+      const response = await fetch(`${API_BASE}/quiz/start`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        dispatch({ type: quizActions.SET_SESSION_ID, payload: data.data.session_id });
+        console.log('✅ Quiz session started:', data.data.session_id);
+        return data.data.session_id;
+      } else {
+        throw new Error(data.message || 'Failed to start quiz');
+      }
+    } catch (error) {
+      console.error('❌ Start quiz error:', error);
+      setError(error.message || 'Failed to start quiz session');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [API_BASE, setLoading, setError]);
+  
+  const fetchReferenceData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('📋 Fetching reference data...');
+      const response = await fetch(`${API_BASE}/quiz/reference-data`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Reference data loaded:', data.data);
+        dispatch({ type: quizActions.SET_REFERENCE_DATA, payload: data.data });
+        return data.data;
+      } else {
+        throw new Error(data.message || 'Failed to fetch reference data');
+      }
+    } catch (error) {
+      console.error('❌ Fetch reference data error:', error);
+      setError(error.message || 'Failed to load quiz data');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [API_BASE, setLoading, setError]);
+  
+  const submitQuiz = useCallback(async () => {
+    if (!state.sessionId || !state.skinType) {
+      setError('Missing required quiz data');
+      return null;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('📝 Submitting quiz...', { 
+        sessionId: state.sessionId, 
+        skinType: state.skinType, 
+        concerns: state.concerns, 
+        sensitivities: state.sensitivities 
+      });
+      
+      const response = await fetch(`${API_BASE}/quiz/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: state.sessionId,
+          skin_type: state.skinType,
+          concerns: state.concerns,
+          sensitivities: state.sensitivities
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Quiz submitted successfully:', data.data);
+        dispatch({ type: quizActions.SET_QUIZ_RESULTS, payload: data.data });
+        return data.data;
+      } else {
+        throw new Error(data.message || 'Failed to submit quiz');
+      }
+    } catch (error) {
+      console.error('❌ Submit quiz error:', error);
+      setError(error.message || 'Failed to submit quiz');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [state.sessionId, state.skinType, state.concerns, state.sensitivities, API_BASE, setLoading, setError]);
+  
+  const fetchRecommendations = useCallback(async (sessionId = state.sessionId) => {
+    if (!sessionId) {
+      setError('No session ID available');
+      return null;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🎯 Fetching recommendations for:', sessionId);
+      const response = await fetch(`${API_BASE}/recommendations/${sessionId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Recommendations loaded:', data.data.recommendations);
+        dispatch({ 
+          type: quizActions.SET_QUIZ_RESULTS, 
+          payload: { 
+            quiz_id: state.quizId || Date.now(),
+            recommendations: data.data.recommendations 
+          }
+        });
+        return data.data.recommendations;
+      } else {
+        throw new Error(data.message || 'Failed to fetch recommendations');
+      }
+    } catch (error) {
+      console.error('❌ Fetch recommendations error:', error);
+      setError(error.message || 'Failed to load recommendations');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [state.sessionId, state.quizId, API_BASE, setLoading, setError]);
+  
+  // Basic Actions - KEEP EXISTING INTERFACE
   const actions = {
+    // Data setters
     setSessionId: (sessionId) => {
       dispatch({ type: quizActions.SET_SESSION_ID, payload: sessionId });
     },
@@ -155,7 +332,7 @@ export function QuizProvider({ children }) {
     setSkinType: (skinType, method = 'self_selected') => {
       dispatch({ 
         type: quizActions.SET_SKIN_TYPE, 
-        payload: { skinType, method } 
+        payload: typeof skinType === 'string' ? skinType : { skinType, method }
       });
     },
     
@@ -179,13 +356,9 @@ export function QuizProvider({ children }) {
       dispatch({ type: quizActions.SET_REFERENCE_DATA, payload: data });
     },
     
-    setLoading: (loading) => {
-      dispatch({ type: quizActions.SET_LOADING, payload: loading });
-    },
+    setLoading,
     
-    setError: (error) => {
-      dispatch({ type: quizActions.SET_ERROR, payload: error });
-    },
+    setError,
     
     setQuizResults: (results) => {
       dispatch({ type: quizActions.SET_QUIZ_RESULTS, payload: results });
@@ -195,7 +368,7 @@ export function QuizProvider({ children }) {
       dispatch({ type: quizActions.RESET_QUIZ });
     },
     
-    // Navigation helpers
+    // Navigation helpers - KEEP EXISTING INTERFACE
     nextStep: () => {
       if (state.currentStep < state.totalSteps) {
         dispatch({ 
@@ -214,7 +387,7 @@ export function QuizProvider({ children }) {
       }
     },
     
-    // Validation helpers
+    // Validation helpers - KEEP EXISTING INTERFACE
     isCurrentStepValid: () => {
       switch (state.currentStep) {
         case 1:
@@ -234,7 +407,13 @@ export function QuizProvider({ children }) {
     
     canGoBack: () => {
       return state.currentStep > 1;
-    }
+    },
+    
+    // API Functions - ADD MISSING FUNCTIONS
+    startQuiz,
+    fetchReferenceData,
+    submitQuiz,
+    fetchRecommendations
   };
   
   const value = {
