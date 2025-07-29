@@ -1,0 +1,348 @@
+// backend/scripts/test-database-completeness.js
+// Comprehensive test untuk check database data completeness
+
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'matchcare_fresh_db',
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT || 5432,
+});
+
+class DatabaseCompletenessTest {
+  async runFullTest() {
+    console.log('🗄️ MatchCare Database Completeness Test');
+    console.log('=========================================\n');
+
+    try {
+      // Test 1: Basic table existence
+      await this.testTableExistence();
+      
+      // Test 2: Data volume analysis
+      await this.testDataVolume();
+      
+      // Test 3: CSV data import status
+      await this.testCSVDataImport();
+      
+      // Test 4: Product-Ingredient relationships
+      await this.testProductIngredientMappings();
+      
+      // Test 5: Data quality check
+      await this.testDataQuality();
+      
+      // Test 6: Missing API data check
+      await this.testAPIDataReadiness();
+      
+      console.log('\n📋 SUMMARY AND RECOMMENDATIONS');
+      console.log('==============================');
+      console.log('Based on results above, prioritize:');
+      console.log('1. Missing API endpoints implementation');
+      console.log('2. CSV data import if counts are low');
+      console.log('3. Product-ingredient mapping creation');
+      console.log('4. Data quality fixes');
+      
+    } catch (error) {
+      console.error('❌ Test failed:', error.message);
+    } finally {
+      await pool.end();
+    }
+  }
+
+  async testTableExistence() {
+    console.log('1️⃣ Testing Table Existence...\n');
+    
+    const requiredTables = [
+      'products',
+      'ingredients', 
+      'product_ingredients',
+      'brands',
+      'skin_types',
+      'skin_concerns',
+      'guest_sessions',
+      'quiz_results'
+    ];
+
+    for (const table of requiredTables) {
+      try {
+        const result = await pool.query(`
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' AND table_name = $1
+        `, [table]);
+        
+        const exists = result.rows.length > 0;
+        console.log(`   ${exists ? '✅' : '❌'} ${table}: ${exists ? 'EXISTS' : 'MISSING'}`);
+        
+        if (!exists && ['products', 'ingredients'].includes(table)) {
+          console.log(`      🚨 CRITICAL: ${table} table missing - core functionality blocked!`);
+        }
+      } catch (error) {
+        console.log(`   ❌ ${table}: ERROR - ${error.message}`);
+      }
+    }
+  }
+
+  async testDataVolume() {
+    console.log('\n2️⃣ Testing Data Volume...\n');
+    
+    const tables = [
+      { name: 'products', expected: 3940, critical: true },
+      { name: 'ingredients', expected: 100, critical: true },
+      { name: 'brands', expected: 50, critical: false },
+      { name: 'skin_types', expected: 4, critical: true },
+      { name: 'skin_concerns', expected: 10, critical: true },
+      { name: 'guest_sessions', expected: 0, critical: false },
+      { name: 'quiz_results', expected: 0, critical: false }
+    ];
+
+    for (const table of tables) {
+      try {
+        const result = await pool.query(`SELECT COUNT(*) FROM ${table.name}`);
+        const count = parseInt(result.rows[0].count);
+        const percentage = table.expected > 0 ? Math.round((count / table.expected) * 100) : 100;
+        
+        let status = '✅';
+        if (table.critical && count < table.expected * 0.1) status = '🚨';
+        else if (count < table.expected * 0.5) status = '⚠️';
+        
+        console.log(`   ${status} ${table.name}: ${count.toLocaleString()} rows (${percentage}% of expected ${table.expected})`);
+        
+        if (table.critical && count === 0) {
+          console.log(`      🚨 CRITICAL: No data in ${table.name} - import required!`);
+        }
+      } catch (error) {
+        console.log(`   ❌ ${table.name}: ERROR - ${error.message}`);
+      }
+    }
+  }
+
+  async testCSVDataImport() {
+    console.log('\n3️⃣ Testing CSV Data Import Status...\n');
+    
+    try {
+      // Check products table for CSV data indicators
+      const productSample = await pool.query(`
+        SELECT 
+          name, brand, product_type, description, ingredient_list,
+          main_category, subcategory
+        FROM products 
+        WHERE name IS NOT NULL 
+        LIMIT 3
+      `);
+      
+      if (productSample.rows.length > 0) {
+        console.log('   ✅ Products table has data:');
+        productSample.rows.forEach((product, i) => {
+          console.log(`      ${i + 1}. ${product.name} (${product.brand})`);
+          console.log(`         Category: ${product.main_category} > ${product.subcategory}`);
+          console.log(`         Has ingredients: ${product.ingredient_list ? '✅' : '❌'}`);
+        });
+        
+        // Check data completeness
+        const completeness = await pool.query(`
+          SELECT 
+            COUNT(*) as total,
+            COUNT(name) as has_name,
+            COUNT(brand) as has_brand,
+            COUNT(ingredient_list) as has_ingredients,
+            COUNT(description) as has_description
+          FROM products
+        `);
+        
+        const stats = completeness.rows[0];
+        console.log('\n   📊 Data Completeness:');
+        console.log(`      Names: ${stats.has_name}/${stats.total} (${Math.round(stats.has_name/stats.total*100)}%)`);
+        console.log(`      Brands: ${stats.has_brand}/${stats.total} (${Math.round(stats.has_brand/stats.total*100)}%)`);
+        console.log(`      Ingredients: ${stats.has_ingredients}/${stats.total} (${Math.round(stats.has_ingredients/stats.total*100)}%)`);
+        console.log(`      Descriptions: ${stats.has_description}/${stats.total} (${Math.round(stats.has_description/stats.total*100)}%)`);
+        
+      } else {
+        console.log('   🚨 CRITICAL: No product data found - CSV import required!');
+        console.log('   💡 ACTION: Run CSV import script');
+      }
+      
+    } catch (error) {
+      console.log(`   ❌ CSV data test failed: ${error.message}`);
+    }
+  }
+
+  async testProductIngredientMappings() {
+    console.log('\n4️⃣ Testing Product-Ingredient Mappings...\n');
+    
+    try {
+      // Check if product_ingredients table exists and has data
+      const mappingCount = await pool.query(`
+        SELECT COUNT(*) FROM product_ingredients
+      `);
+      
+      const count = parseInt(mappingCount.rows[0].count);
+      console.log(`   📊 Product-Ingredient mappings: ${count.toLocaleString()}`);
+      
+      if (count === 0) {
+        console.log('   🚨 CRITICAL: No product-ingredient mappings found!');
+        console.log('   💡 ACTION: Create mappings from ingredient_list data');
+        
+        // Check if products have ingredient_list to create mappings from
+        const productsWithIngredients = await pool.query(`
+          SELECT COUNT(*) FROM products 
+          WHERE ingredient_list IS NOT NULL AND ingredient_list != ''
+        `);
+        
+        const productCount = parseInt(productsWithIngredients.rows[0].count);
+        console.log(`   📋 Products with ingredient lists: ${productCount}`);
+        
+        if (productCount > 0) {
+          console.log('   ✅ Can create mappings from existing ingredient_list data');
+        } else {
+          console.log('   ❌ No ingredient_list data to create mappings from');
+        }
+      } else {
+        // Test mapping quality
+        const sampleMappings = await pool.query(`
+          SELECT 
+            p.name as product_name,
+            i.name as ingredient_name
+          FROM product_ingredients pi
+          JOIN products p ON pi.product_id = p.id
+          JOIN ingredients i ON pi.ingredient_id = i.id
+          LIMIT 5
+        `);
+        
+        console.log('   ✅ Sample mappings:');
+        sampleMappings.rows.forEach((mapping, i) => {
+          console.log(`      ${i + 1}. ${mapping.product_name} contains ${mapping.ingredient_name}`);
+        });
+      }
+      
+    } catch (error) {
+      console.log(`   ❌ Mapping test failed: ${error.message}`);
+      if (error.message.includes('product_ingredients')) {
+        console.log('   💡 ACTION: Create product_ingredients table and populate mappings');
+      }
+    }
+  }
+
+  async testDataQuality() {
+    console.log('\n5️⃣ Testing Data Quality...\n');
+    
+    try {
+      // Check for data quality issues
+      const qualityChecks = [
+        {
+          name: 'Products without names',
+          query: 'SELECT COUNT(*) FROM products WHERE name IS NULL OR name = \'\'',
+          threshold: 10
+        },
+        {
+          name: 'Products without brands',
+          query: 'SELECT COUNT(*) FROM products WHERE brand IS NULL OR brand = \'\'',
+          threshold: 100
+        },
+        {
+          name: 'Products without categories',
+          query: 'SELECT COUNT(*) FROM products WHERE main_category IS NULL OR main_category = \'\'',
+          threshold: 200
+        },
+        {
+          name: 'Products without ingredient lists',
+          query: 'SELECT COUNT(*) FROM products WHERE ingredient_list IS NULL OR ingredient_list = \'\'',
+          threshold: 500
+        },
+        {
+          name: 'Duplicate product names',
+          query: 'SELECT COUNT(*) - COUNT(DISTINCT name) FROM products WHERE name IS NOT NULL',
+          threshold: 50
+        }
+      ];
+
+      for (const check of qualityChecks) {
+        try {
+          const result = await pool.query(check.query);
+          const count = parseInt(result.rows[0].count);
+          const status = count <= check.threshold ? '✅' : count <= check.threshold * 2 ? '⚠️' : '🚨';
+          
+          console.log(`   ${status} ${check.name}: ${count}`);
+          
+          if (count > check.threshold) {
+            console.log(`      💡 Consider data cleanup - threshold: ${check.threshold}`);
+          }
+        } catch (error) {
+          console.log(`   ❌ ${check.name}: ERROR - ${error.message}`);
+        }
+      }
+      
+    } catch (error) {
+      console.log(`   ❌ Data quality test failed: ${error.message}`);
+    }
+  }
+
+  async testAPIDataReadiness() {
+    console.log('\n6️⃣ Testing API Data Readiness...\n');
+    
+    try {
+      // Test data for products API
+      const productAPIData = await pool.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN name IS NOT NULL AND brand IS NOT NULL THEN 1 END) as api_ready
+        FROM products
+      `);
+      
+      const productStats = productAPIData.rows[0];
+      const productReadiness = Math.round((productStats.api_ready / productStats.total) * 100);
+      
+      console.log(`   📦 Products API readiness: ${productStats.api_ready}/${productStats.total} (${productReadiness}%)`);
+      
+      if (productReadiness < 80) {
+        console.log('   ⚠️ Products API may have incomplete data responses');
+      }
+      
+      // Test data for ingredients API
+      const ingredientAPIData = await pool.query(`
+        SELECT 
+          COUNT(*) as total,
+          COUNT(CASE WHEN name IS NOT NULL THEN 1 END) as api_ready
+        FROM ingredients
+      `);
+      
+      if (ingredientAPIData.rows.length > 0) {
+        const ingredientStats = ingredientAPIData.rows[0];
+        const ingredientReadiness = ingredientStats.total > 0 ? Math.round((ingredientStats.api_ready / ingredientStats.total) * 100) : 0;
+        
+        console.log(`   🧪 Ingredients API readiness: ${ingredientStats.api_ready}/${ingredientStats.total} (${ingredientReadiness}%)`);
+      } else {
+        console.log('   🚨 Ingredients table missing - API will fail');
+      }
+      
+      // Test recommendation data
+      const recommendationData = await pool.query(`
+        SELECT 
+          COUNT(DISTINCT skin_type_id) as skin_types,
+          COUNT(DISTINCT unnest(concern_ids)) as concerns
+        FROM quiz_results
+        WHERE skin_type_id IS NOT NULL
+      `);
+      
+      if (recommendationData.rows.length > 0) {
+        const recStats = recommendationData.rows[0];
+        console.log(`   🎯 Recommendation data: ${recStats.skin_types} skin types, ${recStats.concerns} concerns`);
+      } else {
+        console.log('   ℹ️ No quiz results yet - recommendations will use sample data');
+      }
+      
+    } catch (error) {
+      console.log(`   ❌ API readiness test failed: ${error.message}`);
+    }
+  }
+}
+
+// Run test if called directly
+if (require.main === module) {
+  const tester = new DatabaseCompletenessTest();
+  tester.runFullTest().catch(console.error);
+}
+
+module.exports = DatabaseCompletenessTest;

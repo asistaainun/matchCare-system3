@@ -6,6 +6,7 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const { Pool } = require('pg');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -81,6 +82,22 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       api_health: '/api/health',
+      
+      // Products API (NEW)
+      products: {
+        list: 'GET /api/products',
+        detail: 'GET /api/products/:id', 
+        categories: 'GET /api/products/categories',
+        brands: 'GET /api/products/brands'
+      },
+      
+      // Ingredients API (NEW)
+      ingredients: {
+        list: 'GET /api/ingredients',
+        detail: 'GET /api/ingredients/:nameOrId',
+        key_ingredients: 'GET /api/ingredients/key-ingredients',
+        compatibility: 'POST /api/ingredients/compatibility-check'
+      },
       
       // Quiz System
       quiz: {
@@ -460,6 +477,625 @@ app.get('/api/recommendations/:session_id', async (req, res) => {
   }
 });
 
+// Product Search (specific endpoint for test compatibility)
+app.get('/api/products/search', async (req, res) => {
+  try {
+    const { q, limit = 20, offset = 0 } = req.query;
+    
+    let query = `
+      SELECT 
+        p.id, p.name, b.name as brand_name, p.brand_id,
+        p.product_type, p.main_category, p.subcategory,
+        p.description, p.local_image_path
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    
+    if (q) {
+      query += ` AND (
+        p.name ILIKE $1 OR 
+        p.description ILIKE $1 OR 
+        b.name ILIKE $1
+      )`;
+      params.push(`%${q}%`);
+    }
+    
+    query += ` ORDER BY p.name LIMIT ${limit} OFFSET ${offset}`;
+    
+    const result = await pool.query(query, params);
+    
+    res.json({
+      success: true,
+      data: result.rows,
+      total: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('Product search error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/products', async (req, res) => {
+  try {
+    const { 
+      limit = 20, 
+      offset = 0, 
+      search,
+      category, 
+      brand, 
+      skinType,
+      alcohol_free,
+      fragrance_free,
+      paraben_free,
+      sulfate_free,
+      silicone_free
+    } = req.query;
+
+    let query = `
+      SELECT 
+        p.id,
+        p.name,
+        b.name as brand_name,
+        p.brand_id,
+        p.product_type,
+        p.main_category,
+        p.subcategory,
+        p.description,
+        p.how_to_use,
+        p.product_url,
+        p.local_image_path,
+        p.bpom_number,
+        p.alcohol_free,
+        p.fragrance_free,
+        p.paraben_free,
+        p.sulfate_free,
+        p.silicone_free
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    let paramCount = 0;
+
+    // Search functionality
+    if (search) {
+      paramCount++;
+      query += ` AND (
+        p.name ILIKE $${paramCount} OR 
+        p.description ILIKE $${paramCount} OR 
+        b.name ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    // Category filter
+    if (category) {
+      paramCount++;
+      query += ` AND p.main_category ILIKE $${paramCount}`;
+      params.push(`%${category}%`);
+    }
+
+    // Brand filter
+    if (brand) {
+      paramCount++;
+      query += ` AND b.name ILIKE $${paramCount}`;
+      params.push(`%${brand}%`);
+    }
+
+    // Safety filters
+    if (alcohol_free === 'true') {
+      query += ` AND p.alcohol_free = true`;
+    }
+    if (fragrance_free === 'true') {
+      query += ` AND p.fragrance_free = true`;
+    }
+    if (paraben_free === 'true') {
+      query += ` AND p.paraben_free = true`;
+    }
+    if (sulfate_free === 'true') {
+      query += ` AND p.sulfate_free = true`;
+    }
+    if (silicone_free === 'true') {
+      query += ` AND p.silicone_free = true`;
+    }
+
+    // Pagination
+    paramCount++;
+    query += ` ORDER BY p.name LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+    
+    paramCount++;
+    query += ` OFFSET $${paramCount}`;
+    params.push(parseInt(offset));
+
+    const result = await pool.query(query, params);
+
+    // Get total count for pagination
+    let countQuery = `
+      SELECT COUNT(*) 
+      FROM products p 
+      LEFT JOIN brands b ON p.brand_id = b.id 
+      WHERE 1=1
+    `;
+    const countParams = [];
+    let countParamIndex = 0;
+
+    if (search) {
+      countParamIndex++;
+      countQuery += ` AND (
+        p.name ILIKE $${countParamIndex} OR 
+        p.description ILIKE $${countParamIndex} OR 
+        b.name ILIKE $${countParamIndex}
+      )`;
+      countParams.push(`%${search}%`);
+    }
+
+    if (category) {
+      countParamIndex++;
+      countQuery += ` AND p.main_category ILIKE $${countParamIndex}`;
+      countParams.push(`%${category}%`);
+    }
+
+    if (brand) {
+      countParamIndex++;
+      countQuery += ` AND b.name ILIKE $${countParamIndex}`;
+      countParams.push(`%${brand}%`);
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Products API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// 3. Product Categories
+// 3. Product Categories (FIXED)
+app.get('/api/products/categories', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        main_category as category,
+        COUNT(*) as product_count
+      FROM products 
+      WHERE main_category IS NOT NULL 
+        AND main_category != ''
+        AND main_category != 'null'
+      GROUP BY main_category 
+      ORDER BY product_count DESC
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error('Categories API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// 4. Available Brands
+app.get('/api/products/brands', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        b.id,
+        b.name,
+        COUNT(p.id) as product_count
+      FROM brands b
+      LEFT JOIN products p ON b.id = p.brand_id
+      GROUP BY b.id, b.name
+      HAVING COUNT(p.id) > 0
+      ORDER BY product_count DESC, b.name ASC
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error('Brands API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// 2. Product Detail (CRITICAL)
+app.get('/api/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get product with brand information
+    const productQuery = `
+      SELECT 
+        p.*,
+        b.name as brand_name,
+        b.description as brand_description
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.id = $1
+    `;
+
+    const productResult = await pool.query(productQuery, [id]);
+
+    if (productResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found'
+      });
+    }
+
+    const product = productResult.rows[0];
+
+    // Get ingredients for this product
+    const ingredientsQuery = `
+      SELECT 
+        i.id,
+        i.name,
+        i.what_it_does,
+        i.explanation,
+        i.benefit,
+        i.safety,
+        pi.is_key_ingredient
+      FROM product_ingredients pi
+      JOIN ingredients i ON pi.ingredient_id = i.id
+      WHERE pi.product_id = $1
+      ORDER BY pi.is_key_ingredient DESC, i.name ASC
+    `;
+
+    const ingredientsResult = await pool.query(ingredientsQuery, [id]);
+
+    // Parse ingredient list if no mappings exist
+    let ingredients = ingredientsResult.rows;
+    if (ingredients.length === 0 && product.ingredient_list) {
+      // Fallback: parse ingredient_list string
+      const rawIngredients = product.ingredient_list
+        .split(',')
+        .map(ing => ing.trim())
+        .filter(ing => ing.length > 0)
+        .slice(0, 20); // Limit to 20 ingredients
+      
+      ingredients = rawIngredients.map(name => ({
+        name,
+        what_it_does: null,
+        explanation: null,
+        benefit: null,
+        safety: null,
+        is_key_ingredient: false
+      }));
+    }
+
+    // Get similar products by category and brand
+    const similarQuery = `
+      SELECT 
+        p.id,
+        p.name,
+        b.name as brand_name,
+        p.main_category,
+        p.local_image_path
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.main_category = $1 
+      AND p.id != $2
+      ORDER BY RANDOM()
+      LIMIT 6
+    `;
+
+    const similarResult = await pool.query(similarQuery, [product.main_category, id]);
+
+    res.json({
+      success: true,
+      data: {
+        product: {
+          ...product,
+          ingredients,
+          similar_products: similarResult.rows
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Product detail API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+
+// ===== INGREDIENTS API ENDPOINTS =====
+
+// 5. Ingredients Listing (CRITICAL)
+app.get('/api/ingredients', async (req, res) => {
+  try {
+    const { 
+      limit = 50, 
+      offset = 0, 
+      search,
+      key_ingredients_only 
+    } = req.query;
+
+    let query = `
+      SELECT 
+        i.id,
+        i.name,
+        i.what_it_does,
+        i.explanation,
+        i.benefit,
+        i.safety,
+        i.is_key_ingredient,
+        i.actual_functions,
+        i.alternative_names
+      FROM ingredients i
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    let paramCount = 0;
+
+    // Search functionality
+    if (search) {
+      paramCount++;
+      query += ` AND (
+        i.name ILIKE $${paramCount} OR 
+        i.what_it_does ILIKE $${paramCount} OR
+        i.explanation ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+
+    // Key ingredients filter
+    if (key_ingredients_only === 'true') {
+      query += ` AND i.is_key_ingredient = true`;
+    }
+
+    // Pagination
+    paramCount++;
+    query += ` ORDER BY i.name LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+    
+    paramCount++;
+    query += ` OFFSET $${paramCount}`;
+    params.push(parseInt(offset));
+
+    const result = await pool.query(query, params);
+
+    // Count total
+    let countQuery = `SELECT COUNT(*) FROM ingredients i WHERE 1=1`;
+    const countParams = [];
+    let countParamIndex = 0;
+
+    if (search) {
+      countParamIndex++;
+      countQuery += ` AND (
+        i.name ILIKE $${countParamIndex} OR 
+        i.what_it_does ILIKE $${countParamIndex} OR
+        i.explanation ILIKE $${countParamIndex}
+      )`;
+      countParams.push(`%${search}%`);
+    }
+
+    if (key_ingredients_only === 'true') {
+      countQuery += ` AND i.is_key_ingredient = true`;
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const total = parseInt(countResult.rows[0].count);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      pagination: {
+        total,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+
+  } catch (error) {
+    console.error('Ingredients API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Ingredient Search (specific endpoint)
+app.get('/api/ingredients/search', async (req, res) => {
+  try {
+    const { q, limit = 20 } = req.query;
+    
+    let query = `
+      SELECT id, name, what_it_does, explanation, benefit, is_key_ingredient
+      FROM ingredients 
+      WHERE name ILIKE $1 
+      ORDER BY is_key_ingredient DESC, name ASC 
+      LIMIT $2
+    `;
+    
+    const result = await pool.query(query, [`%${q}%`, limit]);
+    
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error('Ingredient search error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// 7. Key Ingredients List
+app.get('/api/ingredients/key-ingredients', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        i.id,
+        i.name,
+        i.what_it_does,
+        i.explanation,
+        i.benefit,
+        COUNT(pi.product_id) as product_count
+      FROM ingredients i
+      LEFT JOIN product_ingredients pi ON i.id = pi.ingredient_id
+      WHERE i.is_key_ingredient = true
+      GROUP BY i.id, i.name, i.what_it_does, i.explanation, i.benefit
+      ORDER BY product_count DESC, i.name ASC
+    `);
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+
+  } catch (error) {
+    console.error('Key ingredients API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// 6. Ingredient Detail
+app.get('/api/ingredients/:nameOrId', async (req, res) => {
+  try {
+    const { nameOrId } = req.params;
+    
+    // Check if it's numeric ID or name
+    const isId = /^\d+$/.test(nameOrId);
+    
+    let query, params;
+    if (isId) {
+      query = 'SELECT * FROM ingredients WHERE id = $1';
+      params = [parseInt(nameOrId)];
+    } else {
+      query = 'SELECT * FROM ingredients WHERE LOWER(name) = LOWER($1)';
+      params = [nameOrId.replace(/-/g, ' ')]; // Convert URL slug to name
+    }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Ingredient not found'
+      });
+    }
+
+    const ingredient = result.rows[0];
+
+    // Get products containing this ingredient
+    const productsQuery = `
+      SELECT 
+        p.id,
+        p.name,
+        b.name as brand_name,
+        p.main_category,
+        p.local_image_path,
+        pi.is_key_ingredient
+      FROM product_ingredients pi
+      JOIN products p ON pi.product_id = p.id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE pi.ingredient_id = $1
+      ORDER BY pi.is_key_ingredient DESC, p.name ASC
+      LIMIT 12
+    `;
+
+    const productsResult = await pool.query(productsQuery, [ingredient.id]);
+
+    res.json({
+      success: true,
+      data: {
+        ingredient,
+        products: productsResult.rows
+      }
+    });
+
+  } catch (error) {
+    console.error('Ingredient detail API error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+
+
+// 8. Enhanced Compatibility Check (using existing ontology analysis)
+app.post('/api/ingredients/compatibility-check', async (req, res) => {
+  try {
+    const { ingredients } = req.body;
+
+    if (!ingredients || !Array.isArray(ingredients) || ingredients.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide at least 2 ingredients for compatibility check'
+      });
+    }
+
+    // Use existing ontology analysis endpoint
+    const compatibilityResult = await axios.post('http://localhost:5000/api/analysis/ingredient-conflicts', {
+      ingredients
+    });
+
+    res.json({
+      success: true,
+      data: {
+        ingredients,
+        compatibility_analysis: compatibilityResult.data
+      }
+    });
+
+  } catch (error) {
+    console.error('Compatibility check error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // ===== ERROR HANDLERS =====
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
@@ -477,6 +1113,8 @@ app.use('*', (req, res) => {
     message: `Route ${req.originalUrl} not found`,
     available_endpoints: [
       '/', '/health', '/api/health',
+      '/api/products', '/api/products/:id', '/api/products/categories', '/api/products/brands',
+      '/api/ingredients', '/api/ingredients/:nameOrId', '/api/ingredients/key-ingredients',
       '/api/quiz/start', '/api/quiz/submit', '/api/quiz/reference-data', 
       '/api/recommendations/:session_id',
       '/api/analysis/synergistic-combos', '/api/analysis/ingredient-conflicts', 
@@ -523,6 +1161,17 @@ async function startServer() {
       console.log(`🔍 Synergistic Combos: http://localhost:${PORT}/api/analysis/synergistic-combos`);
       console.log(`⚗️ Ontology Status: http://localhost:${PORT}/api/analysis/ontology-status`);
       console.log('✅ Optimal merge complete - Quiz + Ontology ready!');
+
+      console.log('✅ Missing API endpoints implemented successfully!');
+      console.log('📋 New endpoints available:');
+      console.log('   • GET /api/products - Product listing with filtering');
+      console.log('   • GET /api/products/:id - Product detail');
+      console.log('   • GET /api/products/categories - Available categories');
+      console.log('   • GET /api/products/brands - Available brands');
+      console.log('   • GET /api/ingredients - Ingredient listing');
+      console.log('   • GET /api/ingredients/:nameOrId - Ingredient detail');
+      console.log('   • GET /api/ingredients/key-ingredients - Key ingredients list');
+      console.log('   • POST /api/ingredients/compatibility-check - Compatibility analysis');
     });
 
     // Graceful shutdown
