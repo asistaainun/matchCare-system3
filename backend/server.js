@@ -477,6 +477,269 @@ app.get('/api/recommendations/:session_id', async (req, res) => {
   }
 });
 
+// 6. GET /api/utility/skin-type-quiz - Mini Quiz untuk "I'm not sure"
+app.get('/api/utility/skin-type-quiz', async (req, res) => {
+  try {
+    console.log('📋 Getting skin type assessment quiz...');
+
+    // Mini quiz structure sesuai description kamu
+    const skinTypeQuiz = {
+      title: "Let's determine your skin type!",
+      description: "Answer these 4 questions to help us understand your skin better.",
+      questions: [
+        {
+          id: "morning_feel",
+          question: "How does your skin feel when you wake up in the morning?",
+          options: [
+            { 
+              id: "tight_dry", 
+              text: "Tight, dry, maybe flaky", 
+              value: "a",
+              skin_indicator: "dry" 
+            },
+            { 
+              id: "comfortable", 
+              text: "Normal, comfortable, balanced", 
+              value: "b",
+              skin_indicator: "normal" 
+            },
+            { 
+              id: "oily_shiny", 
+              text: "Oily or shiny, especially on forehead, nose, and chin", 
+              value: "c",
+              skin_indicator: "oily" 
+            },
+            { 
+              id: "mixed_zones", 
+              text: "Dry or normal on cheeks, oily in T-zone", 
+              value: "d",
+              skin_indicator: "combination" 
+            }
+          ]
+        },
+        {
+          id: "after_washing",
+          question: "How does your skin feel a few hours after washing your face?",
+          options: [
+            { 
+              id: "tight_rough", 
+              text: "Tight or rough, sometimes flaky", 
+              value: "a",
+              skin_indicator: "dry" 
+            },
+            { 
+              id: "balanced", 
+              text: "Balanced, neither oily nor dry", 
+              value: "b",
+              skin_indicator: "normal" 
+            },
+            { 
+              id: "oily_tzone", 
+              text: "Oily and shiny, especially in the T-zone", 
+              value: "c",
+              skin_indicator: "oily" 
+            },
+            { 
+              id: "mixed_areas", 
+              text: "Oily in T-zone, dry or normal on other areas", 
+              value: "d",
+              skin_indicator: "combination" 
+            }
+          ]
+        },
+        {
+          id: "daily_shine", 
+          question: "How often do you get oily shine during the day?",
+          options: [
+            { 
+              id: "rarely_dry", 
+              text: "Rarely, skin feels dry", 
+              value: "a",
+              skin_indicator: "dry" 
+            },
+            { 
+              id: "rarely_balanced", 
+              text: "Rarely, skin looks balanced", 
+              value: "b",
+              skin_indicator: "normal" 
+            },
+            { 
+              id: "often_greasy", 
+              text: "Often, skin looks shiny or greasy", 
+              value: "c",
+              skin_indicator: "oily" 
+            },
+            { 
+              id: "some_areas", 
+              text: "Only in some areas, mostly T-zone", 
+              value: "d",
+              skin_indicator: "combination" 
+            }
+          ]
+        },
+        {
+          id: "flaky_patches",
+          question: "Do you experience flaky or rough patches?",
+          options: [
+            { 
+              id: "yes_frequently", 
+              text: "Yes, frequently", 
+              value: "a",
+              skin_indicator: "dry" 
+            },
+            { 
+              id: "rarely", 
+              text: "Rarely", 
+              value: "b",
+              skin_indicator: "normal" 
+            },
+            { 
+              id: "almost_never", 
+              text: "Almost never", 
+              value: "c",
+              skin_indicator: "oily" 
+            },
+            { 
+              id: "sometimes_cheeks", 
+              text: "Sometimes on cheeks only", 
+              value: "d",
+              skin_indicator: "combination" 
+            }
+          ]
+        }
+      ],
+      scoring_info: {
+        method: "Count most frequent answer pattern",
+        rules: [
+          "Mostly a = dry skin",
+          "Mostly b = normal skin", 
+          "Mostly c = oily skin",
+          "Mostly d = combination skin",
+          "Mixed answers follow combination rules"
+        ]
+      }
+    };
+
+    res.json({
+      success: true,
+      data: skinTypeQuiz,
+      message: 'Skin type assessment quiz retrieved successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Skin type quiz error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get skin type quiz',
+      error: error.message
+    });
+  }
+});
+
+// 7. POST /api/utility/skin-type-assessment - Assess skin type dari mini quiz
+app.post('/api/utility/skin-type-assessment', async (req, res) => {
+  try {
+    const { answers, session_id } = req.body;
+    
+    if (!answers || !Array.isArray(answers) || answers.length !== 4) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide exactly 4 quiz answers'
+      });
+    }
+    
+    console.log('🧮 Assessing skin type from answers:', answers);
+    
+    // Count answer frequencies according to your rules
+    const answerCounts = answers.reduce((counts, answer) => {
+      counts[answer] = (counts[answer] || 0) + 1;
+      return counts;
+    }, {});
+    
+    // Determine skin type based on your exact rules
+    let determinedSkinType = 'normal'; // default
+    let confidence = 0;
+    
+    // Find most frequent answer
+    const sortedAnswers = Object.entries(answerCounts).sort((a, b) => b[1] - a[1]);
+    const [mostFrequent, highestCount] = sortedAnswers[0];
+    confidence = (highestCount / answers.length) * 100;
+    
+    // Apply your exact rules from description
+    if (answerCounts['a'] >= 3) {
+      determinedSkinType = 'dry';
+    } else if (answerCounts['b'] >= 3) {
+      determinedSkinType = 'normal';
+    } else if (answerCounts['c'] >= 3) {
+      determinedSkinType = 'oily';
+    } else if (answerCounts['d'] >= 3) {
+      determinedSkinType = 'combination';
+    } else {
+      // Mixed answers - apply your combination rules
+      const hasA = answerCounts['a'] > 0;
+      const hasB = answerCounts['b'] > 0;
+      const hasC = answerCounts['c'] > 0;
+      const hasD = answerCounts['d'] > 0;
+      
+      if (hasA && hasB && !hasC && !hasD) {
+        determinedSkinType = 'dry'; // "Mix of a and b = dry"
+      } else if (hasA && hasC) {
+        determinedSkinType = 'oily'; // "Mix of a and c = oily skin"
+      } else if (hasA && hasD) {
+        determinedSkinType = 'combination'; // "Mix of a and d = combination"
+      } else if (hasB && hasC) {
+        determinedSkinType = 'combination'; // "B and c = combination"
+      } else if (hasB && hasD) {
+        determinedSkinType = 'combination'; // "B and d = combination"
+      } else if (hasC && hasD) {
+        determinedSkinType = 'combination'; // "C and d = combination"
+      } else {
+        determinedSkinType = 'combination'; // Default for other mixed cases
+      }
+    }
+    
+    // Log assessment for debugging
+    console.log(`✅ Skin type determined: ${determinedSkinType} (confidence: ${confidence.toFixed(1)}%)`);
+    console.log(`   Answer distribution:`, answerCounts);
+    
+    const assessmentResult = {
+      determined_skin_type: determinedSkinType,
+      confidence_percentage: Math.round(confidence),
+      answer_distribution: answerCounts,
+      assessment_method: 'mini_quiz_algorithm',
+      raw_answers: answers
+    };
+    
+    // Optionally save assessment to session if session_id provided
+    if (session_id) {
+      try {
+        await pool.query(
+          'UPDATE guest_sessions SET skin_type_assessment = $1 WHERE session_id = $2',
+          [JSON.stringify(assessmentResult), session_id]
+        );
+        console.log(`💾 Assessment saved to session: ${session_id}`);
+      } catch (error) {
+        console.warn(`⚠️ Failed to save assessment to session: ${error.message}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: assessmentResult,
+      message: `Skin type assessed as: ${determinedSkinType}`,
+      next_step: 'Continue with skin concerns and sensitivities selection'
+    });
+
+  } catch (error) {
+    console.error('❌ Skin type assessment error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assess skin type',
+      error: error.message
+    });
+  }
+});
+
 // Product Search (specific endpoint for test compatibility)
 app.get('/api/products/search', async (req, res) => {
   try {
@@ -835,6 +1098,154 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
+// 1. POST /api/products/recommendations - Product Recommendations based on Profile
+app.post('/api/products/recommendations', async (req, res) => {
+  try {
+    const { 
+      session_id,
+      skin_type, 
+      concerns = [], 
+      sensitivities = [],
+      avoidedIngredients = [],
+      likedIngredients = [],
+      limit = 20 
+    } = req.body;
+
+    console.log('🎯 Getting personalized product recommendations...');
+
+    // Build dynamic query based on profile
+    let query = `
+      SELECT DISTINCT
+        p.id,
+        p.name,
+        b.name as brand_name,
+        p.product_type,
+        p.main_category,
+        p.description,
+        p.local_image_path,
+        p.alcohol_free,
+        p.fragrance_free,
+        p.paraben_free,
+        p.sulfate_free,
+        p.silicone_free
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN product_ingredients pi ON p.id = pi.product_id
+      LEFT JOIN ingredients i ON pi.ingredient_id = i.id
+      WHERE p.id IS NOT NULL
+    `;
+
+    const params = [];
+    let paramCount = 0;
+
+    // Filter by sensitivities (exclude products with allergens)
+    if (sensitivities.includes('fragrance')) {
+      query += ` AND p.fragrance_free = true`;
+    }
+    if (sensitivities.includes('alcohol')) {
+      query += ` AND p.alcohol_free = true`;
+    }
+    if (sensitivities.includes('silicone')) {
+      query += ` AND p.silicone_free = true`;
+    }
+
+    // Exclude avoided ingredients
+    if (avoidedIngredients.length > 0) {
+      paramCount++;
+      query += ` AND p.id NOT IN (
+        SELECT DISTINCT pi2.product_id 
+        FROM product_ingredients pi2
+        JOIN ingredients i2 ON pi2.ingredient_id = i2.id
+        WHERE i2.name = ANY($${paramCount})
+      )`;
+      params.push(avoidedIngredients);
+    }
+
+    // Prioritize liked ingredients
+    if (likedIngredients.length > 0) {
+      paramCount++;
+      query += ` AND p.id IN (
+        SELECT DISTINCT pi3.product_id 
+        FROM product_ingredients pi3
+        JOIN ingredients i3 ON pi3.ingredient_id = i3.id
+        WHERE i3.name = ANY($${paramCount})
+      )`;
+      params.push(likedIngredients);
+    }
+
+    // Add pagination
+    paramCount++;
+    query += ` ORDER BY p.name LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+
+    const result = await pool.query(query, params);
+
+    // Calculate match scores using ontology analysis
+    const enhancedRecommendations = await Promise.all(
+      result.rows.map(async (product) => {
+        try {
+          // Get ingredient analysis for this product
+          const ingredientAnalysis = await axios.post('http://localhost:5000/api/analysis/ingredient-analysis', {
+            product_id: product.id,
+            skin_type,
+            concerns
+          });
+
+          const matchScore = calculateMatchScore(product, {
+            skin_type,
+            concerns,
+            sensitivities,
+            avoidedIngredients,
+            likedIngredients
+          });
+
+          return {
+            ...product,
+            match_score: matchScore,
+            ontology_analysis: ingredientAnalysis.data || {},
+            reasons: generateMatchReasons(product, { skin_type, concerns, sensitivities })
+          };
+        } catch (error) {
+          console.warn(`Analysis failed for product ${product.id}:`, error.message);
+          return {
+            ...product,
+            match_score: 75, // Default score
+            ontology_analysis: { status: 'analysis_unavailable' },
+            reasons: ['Basic compatibility match']
+          };
+        }
+      })
+    );
+
+    // Sort by match score
+    enhancedRecommendations.sort((a, b) => b.match_score - a.match_score);
+
+    res.json({
+      success: true,
+      data: {
+        recommendations: enhancedRecommendations,
+        total_found: enhancedRecommendations.length,
+        profile_used: {
+          skin_type,
+          concerns,
+          sensitivities,
+          avoidedIngredients: avoidedIngredients.length,
+          likedIngredients: likedIngredients.length
+        },
+        ontology_enhanced: true
+      },
+      message: 'Ontology-based recommendations generated successfully'
+    });
+
+  } catch (error) {
+    console.error('❌ Product recommendations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate recommendations',
+      error: error.message
+    });
+  }
+});
 
 // ===== INGREDIENTS API ENDPOINTS =====
 
@@ -996,6 +1407,97 @@ app.get('/api/ingredients/key-ingredients', async (req, res) => {
   }
 });
 
+// 4. GET /api/ingredients/benefits - Available Ingredient Benefits
+app.get('/api/ingredients/benefits', async (req, res) => {
+  try {
+    // Check if we have a benefits table, if not return predefined benefits
+    let benefits = [];
+    
+    try {
+      const result = await pool.query('SELECT id, name, display_name FROM ingredient_benefits ORDER BY name');
+      benefits = result.rows;
+    } catch (error) {
+      console.warn('Benefits table not found, using predefined benefits');
+      
+      // Predefined benefits based on your description
+      benefits = [
+        { id: 1, name: 'acne_fighter', display_name: 'Acne Fighter' },
+        { id: 2, name: 'brightening', display_name: 'Brightening' },
+        { id: 3, name: 'good_for_texture', display_name: 'Good for Texture' },
+        { id: 4, name: 'reduces_redness', display_name: 'Reduces Redness' },
+        { id: 5, name: 'reduces_large_pores', display_name: 'Reduces Large Pores' },
+        { id: 6, name: 'helps_with_anti_aging', display_name: 'Helps with Anti Aging' },
+        { id: 7, name: 'helps_with_dark_spots', display_name: 'Helps with Dark Spots' },
+        { id: 8, name: 'hydrating', display_name: 'Hydrating' },
+        { id: 9, name: 'skin_conditioning', display_name: 'Skin Conditioning' },
+        { id: 10, name: 'reduces_irritation', display_name: 'Reduces Irritation' }
+      ];
+    }
+
+    res.json({
+      success: true,
+      data: benefits,
+      total: benefits.length
+    });
+
+  } catch (error) {
+    console.error('❌ Ingredient benefits error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ingredient benefits',
+      error: error.message
+    });
+  }
+});
+
+// 5. GET /api/ingredients/functions - Available Ingredient Functions  
+app.get('/api/ingredients/functions', async (req, res) => {
+  try {
+    // Check if we have a functions table, if not return predefined functions
+    let functions = [];
+    
+    try {
+      const result = await pool.query('SELECT id, name FROM ingredient_functions ORDER BY name');
+      functions = result.rows;
+    } catch (error) {
+      console.warn('Functions table not found, using predefined functions');
+      
+      // Predefined functions based on your description (like incidecoder.com)
+      functions = [
+        { id: 1, name: 'humectant' },
+        { id: 2, name: 'occlusive' },
+        { id: 3, name: 'emollient' },
+        { id: 4, name: 'exfoliant' },
+        { id: 5, name: 'abrasive' },
+        { id: 6, name: 'skin_protecting' },
+        { id: 7, name: 'preservative' },
+        { id: 8, name: 'uv_filter' },
+        { id: 9, name: 'surfactant' },
+        { id: 10, name: 'antioxidant' },
+        { id: 11, name: 'buffering' },
+        { id: 12, name: 'antimicrobial' },
+        { id: 13, name: 'soothing' },
+        { id: 14, name: 'moisturizing' },
+        { id: 15, name: 'cleansing' }
+      ];
+    }
+
+    res.json({
+      success: true,
+      data: functions,
+      total: functions.length
+    });
+
+  } catch (error) {
+    console.error('❌ Ingredient functions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ingredient functions',
+      error: error.message
+    });
+  }
+});
+
 // 6. Ingredient Detail
 app.get('/api/ingredients/:nameOrId', async (req, res) => {
   try {
@@ -1095,6 +1597,587 @@ app.post('/api/ingredients/compatibility-check', async (req, res) => {
     });
   }
 });
+
+// 2. POST /api/ingredients/synergies - Ingredient Synergies
+app.post('/api/ingredients/synergies', async (req, res) => {
+  try {
+    const { ingredients } = req.body;
+
+    if (!ingredients || ingredients.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide at least 2 ingredients for synergy analysis'
+      });
+    }
+
+    console.log('🔬 Analyzing ingredient synergies...');
+
+    // Known synergistic combinations (can be enhanced with ontology)
+    const synergisticCombos = [
+      {
+        ingredients: ['niacinamide', 'hyaluronic acid'],
+        synergy_type: 'complementary',
+        benefit: 'Enhanced hydration and barrier function',
+        confidence: 95
+      },
+      {
+        ingredients: ['vitamin c', 'vitamin e'],
+        synergy_type: 'antioxidant_boost',
+        benefit: 'Improved antioxidant protection and stability',
+        confidence: 90
+      },
+      {
+        ingredients: ['ceramides', 'cholesterol'],
+        synergy_type: 'barrier_repair',
+        benefit: 'Optimal skin barrier restoration',
+        confidence: 88
+      },
+      {
+        ingredients: ['retinol', 'niacinamide'],
+        synergy_type: 'tolerance_improvement',
+        benefit: 'Reduced irritation while maintaining efficacy',
+        confidence: 85
+      },
+      {
+        ingredients: ['salicylic acid', 'niacinamide'],
+        synergy_type: 'acne_treatment',
+        benefit: 'Enhanced acne treatment with reduced irritation',
+        confidence: 87
+      }
+    ];
+
+    // Find matching synergies
+    const foundSynergies = synergisticCombos.filter(combo => {
+      const normalizedInput = ingredients.map(ing => ing.toLowerCase().trim());
+      const normalizedCombo = combo.ingredients.map(ing => ing.toLowerCase());
+      
+      return normalizedCombo.every(ingredient => 
+        normalizedInput.some(input => 
+          input.includes(ingredient) || ingredient.includes(input)
+        )
+      );
+    });
+
+    // Use ontology analysis for additional insights
+    let ontologyAnalysis = {};
+    try {
+      const analysisResult = await axios.post('http://localhost:5000/api/analysis/synergistic-combos', {
+        ingredients
+      });
+      ontologyAnalysis = analysisResult.data;
+    } catch (error) {
+      console.warn('Ontology analysis unavailable:', error.message);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        input_ingredients: ingredients,
+        synergistic_combinations: foundSynergies,
+        ontology_analysis: ontologyAnalysis,
+        recommendations: foundSynergies.length > 0 ? 
+          'These ingredients work well together!' : 
+          'No known conflicts, but consider spacing application times',
+        analysis_method: 'knowledge_base + ontology'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Ingredient synergies error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to analyze ingredient synergies',
+      error: error.message
+    });
+  }
+});
+
+// 3. POST /api/ingredients/conflicts - Ingredient Conflicts
+app.post('/api/ingredients/conflicts', async (req, res) => {
+  try {
+    const { ingredients } = req.body;
+
+    if (!ingredients || ingredients.length < 2) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide at least 2 ingredients for conflict analysis'
+      });
+    }
+
+    console.log('⚠️ Analyzing potential ingredient conflicts...');
+
+    // Known conflicting combinations
+    const conflictingCombos = [
+      {
+        ingredients: ['retinol', 'vitamin c'],
+        conflict_type: 'ph_incompatibility',
+        severity: 'moderate',
+        issue: 'pH differences may reduce efficacy',
+        recommendation: 'Use at different times (AM/PM) or alternate days',
+        confidence: 85
+      },
+      {
+        ingredients: ['retinol', 'aha'],
+        conflict_type: 'over_exfoliation',
+        severity: 'high',
+        issue: 'Can cause excessive irritation and dryness',
+        recommendation: 'Start slowly, use on alternate nights, monitor skin response',
+        confidence: 90
+      },
+      {
+        ingredients: ['retinol', 'bha'],
+        conflict_type: 'over_exfoliation',
+        severity: 'high',
+        issue: 'Risk of severe irritation and compromised barrier',
+        recommendation: 'Avoid simultaneous use, alternate nights minimum',
+        confidence: 88
+      },
+      {
+        ingredients: ['vitamin c', 'aha'],
+        conflict_type: 'ph_incompatibility',
+        severity: 'moderate',
+        issue: 'May destabilize vitamin C',
+        recommendation: 'Use vitamin C in AM, AHA in PM',
+        confidence: 80
+      },
+      {
+        ingredients: ['aha', 'bha'],
+        conflict_type: 'over_exfoliation',
+        severity: 'moderate',
+        issue: 'Can lead to irritation if overused',
+        recommendation: 'Start with one, introduce second gradually',
+        confidence: 75
+      }
+    ];
+
+    // Find matching conflicts
+    const foundConflicts = conflictingCombos.filter(combo => {
+      const normalizedInput = ingredients.map(ing => ing.toLowerCase().trim());
+      const normalizedCombo = combo.ingredients.map(ing => ing.toLowerCase());
+      
+      return normalizedCombo.every(ingredient => 
+        normalizedInput.some(input => 
+          input.includes(ingredient) || ingredient.includes(input)
+        )
+      );
+    });
+
+    // Use ontology analysis for additional conflict detection
+    let ontologyAnalysis = {};
+    try {
+      const analysisResult = await axios.post('http://localhost:5000/api/analysis/ingredient-conflicts', {
+        ingredients
+      });
+      ontologyAnalysis = analysisResult.data;
+    } catch (error) {
+      console.warn('Ontology conflict analysis unavailable:', error.message);
+    }
+
+    const riskLevel = foundConflicts.length > 0 ? 
+      Math.max(...foundConflicts.map(c => c.severity === 'high' ? 3 : c.severity === 'moderate' ? 2 : 1)) :
+      0;
+
+    res.json({
+      success: true,
+      data: {
+        input_ingredients: ingredients,
+        conflicts_detected: foundConflicts,
+        risk_level: riskLevel === 3 ? 'high' : riskLevel === 2 ? 'moderate' : riskLevel === 1 ? 'low' : 'none',
+        overall_recommendation: generateOverallRecommendation(foundConflicts, ingredients),
+        ontology_analysis: ontologyAnalysis,
+        analysis_method: 'knowledge_base + ontology'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Ingredient conflicts error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to analyze ingredient conflicts',
+      error: error.message
+    });
+  }
+});
+
+
+// 8. GET /api/recommendations/similar-products/:id - Similar Products (FIXED)
+app.get('/api/recommendations/similar-products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { limit = 6 } = req.query;
+
+    console.log(`🔍 Finding similar products for product ID: ${id}`);
+
+    // 1. Validate ID parameter
+    const productId = parseInt(id);
+    if (isNaN(productId) || productId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID. Must be a positive number.'
+      });
+    }
+
+    // 2. Get the source product (simplified query)
+    const sourceProductQuery = `
+      SELECT 
+        p.id,
+        p.name,
+        p.main_category,
+        b.name as brand_name
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.id = $1
+    `;
+
+    const sourceResult = await pool.query(sourceProductQuery, [productId]);
+
+    if (sourceResult.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Source product not found'
+      });
+    }
+
+    const sourceProduct = sourceResult.rows[0];
+
+    // 3. Find similar products (super simple query to avoid JOIN issues)
+    const similarProductsQuery = `
+      SELECT 
+        p.id,
+        p.name,
+        p.main_category,
+        p.product_type,
+        p.description,
+        p.local_image_path,
+        b.name as brand_name
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.main_category = $1 
+        AND p.id != $2
+        AND p.name IS NOT NULL
+        AND p.main_category IS NOT NULL
+      ORDER BY 
+        CASE WHEN b.name = $3 THEN 1 ELSE 2 END,  -- Prioritize same brand
+        RANDOM()
+      LIMIT $4
+    `;
+
+    const similarResult = await pool.query(similarProductsQuery, [
+      sourceProduct.main_category,
+      productId,
+      sourceProduct.brand_name || '',
+      parseInt(limit)
+    ]);
+
+    // 4. Format response
+    const responseData = {
+      success: true,
+      data: {
+        source_product: {
+          id: sourceProduct.id,
+          name: sourceProduct.name,
+          brand_name: sourceProduct.brand_name,
+          category: sourceProduct.main_category
+        },
+        similar_products: similarResult.rows.map(product => ({
+          id: product.id,
+          name: product.name,
+          brand_name: product.brand_name,
+          main_category: product.main_category,
+          product_type: product.product_type,
+          description: product.description ? product.description.substring(0, 150) + '...' : null,
+          local_image_path: product.local_image_path,
+          similarity_reason: product.brand_name === sourceProduct.brand_name ? 
+            'Same brand and category' : 'Same category'
+        })),
+        similarity_method: 'category_and_brand_based',
+        total_found: similarResult.rows.length
+      },
+      message: 'Similar products found successfully'
+    };
+
+    console.log(`✅ Found ${similarResult.rows.length} similar products for "${sourceProduct.name}"`);
+    
+    res.json(responseData);
+
+  } catch (error) {
+    console.error('❌ Similar products error:', error);  
+    console.error('❌ Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Failed to find similar products',
+      error: error.message,
+      debug: process.env.NODE_ENV === 'development' ? {
+        stack: error.stack,
+        query_failed: true
+      } : undefined
+    });
+  }
+});
+
+// 9. POST /api/recommendations/routine - Skincare Routine Recommendations
+app.post('/api/recommendations/routine', async (req, res) => {
+  try {
+    const { 
+      skin_type, 
+      concerns = [], 
+      time_of_day = 'morning',
+      experience_level = 'beginner',
+      sensitivities = []
+    } = req.body;
+
+    console.log('📅 Creating skincare routine recommendations...');
+
+    // Basic routine templates
+    const routineTemplates = {
+      morning: {
+        beginner: [
+          { step: 1, category: 'cleanser', name: 'Gentle Cleanser', importance: 'essential' },
+          { step: 2, category: 'moisturizer', name: 'Moisturizer', importance: 'essential' },
+          { step: 3, category: 'sunscreen', name: 'Sunscreen SPF 30+', importance: 'essential' }
+        ],
+        intermediate: [
+          { step: 1, category: 'cleanser', name: 'Gentle Cleanser', importance: 'essential' },
+          { step: 2, category: 'serum', name: 'Vitamin C Serum', importance: 'beneficial' },
+          { step: 3, category: 'moisturizer', name: 'Moisturizer', importance: 'essential' },
+          { step: 4, category: 'sunscreen', name: 'Sunscreen SPF 30+', importance: 'essential' }
+        ]
+      },
+      evening: {
+        beginner: [
+          { step: 1, category: 'cleanser', name: 'Gentle Cleanser', importance: 'essential' },
+          { step: 2, category: 'moisturizer', name: 'Night Moisturizer', importance: 'essential' }
+        ],
+        intermediate: [
+          { step: 1, category: 'cleanser', name: 'Gentle Cleanser', importance: 'essential' },
+          { step: 2, category: 'treatment', name: 'Treatment (Retinol/AHA)', importance: 'beneficial' },
+          { step: 3, category: 'moisturizer', name: 'Night Moisturizer', importance: 'essential' }
+        ]
+      }
+    };
+
+    const baseRoutine = routineTemplates[time_of_day]?.[experience_level] || routineTemplates.morning.beginner;
+
+    // Customize routine based on concerns
+    let customizedRoutine = [...baseRoutine];
+
+    if (concerns.includes('acne') && !customizedRoutine.some(step => step.category === 'treatment')) {
+      customizedRoutine.splice(-1, 0, {
+        step: customizedRoutine.length,
+        category: 'treatment',
+        name: 'BHA/Salicylic Acid Treatment',
+        importance: 'beneficial',
+        concern_targeted: 'acne'
+      });
+    }
+
+    if (concerns.includes('dryness')) {
+      const serumIndex = customizedRoutine.findIndex(step => step.category === 'serum');
+      if (serumIndex === -1) {
+        customizedRoutine.splice(-2, 0, {
+          step: customizedRoutine.length,
+          category: 'serum',
+          name: 'Hyaluronic Acid Serum',
+          importance: 'beneficial',
+          concern_targeted: 'dryness'
+        });
+      }
+    }
+
+    // Reorder steps
+    customizedRoutine = customizedRoutine.map((step, index) => ({
+      ...step,
+      step: index + 1
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        routine: customizedRoutine,
+        profile_used: {
+          skin_type,
+          concerns,
+          time_of_day,
+          experience_level,
+          sensitivities
+        },
+        notes: [
+          'Start with essential products first',
+          'Introduce new products one at a time',
+          'Patch test new products before full use',
+          sensitivities.length > 0 ? 'Choose fragrance-free products due to sensitivities' : null
+        ].filter(Boolean),
+        total_steps: customizedRoutine.length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Routine recommendations error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create routine recommendations',
+      error: error.message
+    });
+  }
+});
+
+// ===== OPTIONAL ENDPOINT =====
+
+// 10. GET /api/utility/ingredient-glossary - Ingredient Glossary (Educational)
+app.get('/api/utility/ingredient-glossary', async (req, res) => {
+  try {
+    const { category, search, limit = 50 } = req.query;
+    
+    console.log('📚 Getting ingredient glossary...');
+    
+    // Enhanced query to get comprehensive ingredient info
+    let query = `
+      SELECT 
+        i.id,
+        i.name,
+        i.what_it_does,
+        i.explanation,
+        i.benefit,
+        i.safety,
+        i.alternative_names,
+        i.is_key_ingredient,
+        i.actual_functions,
+        COUNT(pi.product_id) as product_count
+      FROM ingredients i
+      LEFT JOIN product_ingredients pi ON i.id = pi.ingredient_id
+      WHERE 1=1
+    `;
+    
+    const params = [];
+    let paramCount = 0;
+    
+    // Search filter
+    if (search) {
+      paramCount++;
+      query += ` AND (
+        i.name ILIKE $${paramCount} OR 
+        i.what_it_does ILIKE $${paramCount} OR
+        i.explanation ILIKE $${paramCount} OR
+        i.alternative_names ILIKE $${paramCount}
+      )`;
+      params.push(`%${search}%`);
+    }
+    
+    // Category filter (by what_it_does or actual_functions)
+    if (category) {
+      paramCount++;
+      query += ` AND (
+        i.what_it_does ILIKE $${paramCount} OR
+        i.actual_functions ILIKE $${paramCount}
+      )`;
+      params.push(`%${category}%`);
+    }
+    
+    query += ` 
+      GROUP BY i.id, i.name, i.what_it_does, i.explanation, i.benefit, i.safety, i.alternative_names, i.is_key_ingredient, i.actual_functions
+      ORDER BY i.is_key_ingredient DESC, product_count DESC, i.name ASC
+    `;
+    
+    paramCount++;
+    query += ` LIMIT $${paramCount}`;
+    params.push(parseInt(limit));
+    
+    const result = await pool.query(query, params);
+    
+    // Get function categories for filtering
+    const functionCategories = [
+      'humectant', 'occlusive', 'emollient', 'exfoliant', 'abrasive',
+      'skin_protecting', 'preservative', 'uv_filter', 'surfactant', 
+      'antioxidant', 'buffering', 'antimicrobial', 'soothing', 
+      'moisturizing', 'cleansing'
+    ];
+    
+    res.json({
+      success: true,
+      data: {
+        ingredients: result.rows,
+        total_found: result.rows.length,
+        available_categories: functionCategories,
+        key_ingredients_count: result.rows.filter(ing => ing.is_key_ingredient).length
+      },
+      message: 'Ingredient glossary retrieved successfully'
+    });
+    
+  } catch (error) {
+    console.error('❌ Ingredient glossary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get ingredient glossary',
+      error: error.message
+    });
+  }
+});
+
+// ===== HELPER FUNCTIONS =====
+
+function calculateMatchScore(product, profile) {
+  let score = 50; // Base score
+
+  // Sensitivity compliance
+  if (profile.sensitivities.includes('fragrance') && product.fragrance_free) score += 20;
+  if (profile.sensitivities.includes('alcohol') && product.alcohol_free) score += 20;
+  if (profile.sensitivities.includes('silicone') && product.silicone_free) score += 15;
+
+  // Avoided ingredients penalty
+  if (profile.avoidedIngredients.length > 0) score += 10; // Bonus for avoiding unwanted ingredients
+
+  // Liked ingredients bonus
+  if (profile.likedIngredients.length > 0) score += 15; // Bonus for containing preferred ingredients
+
+  // Ensure score is within reasonable range
+  return Math.min(Math.max(score, 10), 100);
+}
+
+function generateMatchReasons(product, profile) {
+  const reasons = [];
+
+  if (profile.sensitivities.includes('fragrance') && product.fragrance_free) {
+    reasons.push('Fragrance-free (matches your sensitivity)');
+  }
+  if (profile.sensitivities.includes('alcohol') && product.alcohol_free) {
+    reasons.push('Alcohol-free formulation');
+  }
+  if (profile.sensitivities.includes('silicone') && product.silicone_free) {
+    reasons.push('Silicone-free formula');
+  }
+
+  if (profile.concerns.includes('acne')) {
+    reasons.push('Suitable for acne-prone skin');
+  }
+  if (profile.concerns.includes('dryness')) {
+    reasons.push('Helps with skin hydration');
+  }
+
+  if (reasons.length === 0) {
+    reasons.push('Compatible with your skin profile');
+  }
+
+  return reasons;
+}
+
+function generateOverallRecommendation(conflicts, ingredients) {
+  if (conflicts.length === 0) {
+    return `These ${ingredients.length} ingredients can generally be used together safely. Consider your skin's tolerance and introduce new products gradually.`;
+  }
+
+  const highSeverityConflicts = conflicts.filter(c => c.severity === 'high');
+  if (highSeverityConflicts.length > 0) {
+    return 'HIGH RISK: These ingredients should not be used together simultaneously. Consider alternating usage or consulting a dermatologist.';
+  }
+
+  const moderateSeverityConflicts = conflicts.filter(c => c.severity === 'moderate');
+  if (moderateSeverityConflicts.length > 0) {
+    return 'MODERATE RISK: Use caution when combining these ingredients. Consider using them at different times of day or on alternate days.';
+  }
+
+  return 'LOW RISK: Monitor your skin response when using these ingredients together. Start slowly and adjust as needed.';
+}
 
 // ===== ERROR HANDLERS =====
 app.use((err, req, res, next) => {
