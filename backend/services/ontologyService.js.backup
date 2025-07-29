@@ -1,0 +1,211 @@
+// backend/services/ontologyService.js
+const axios = require('axios');
+
+class OntologyService {
+  constructor() {
+    this.fusekiEndpoint = 'http://localhost:3030/skincare-db/sparql';
+    this.updateEndpoint = 'http://localhost:3030/skincare-db/update';
+  }
+
+  // Get ingredient incompatibilities (TESTED - Working ✅)
+  async getIngredientConflicts(ingredientNames) {
+    const query = `
+      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      
+      SELECT ?ing1 ?name1 ?ing2 ?name2 ?warning
+      WHERE {
+        ?ing1 rdf:type :Ingredient ;
+              :IngredientName ?name1 ;
+              :incompatibleWith ?ing2 .
+              
+        ?ing2 :IngredientName ?name2 .
+        
+        FILTER(?name1 IN (${ingredientNames.map(name => `"${name}"`).join(', ')}))
+        FILTER(?name2 IN (${ingredientNames.map(name => `"${name}"`).join(', ')}))
+        
+        BIND("⚠️ AVOID COMBINATION" as ?warning)
+      }
+      ORDER BY ?name1 ?name2
+    `;
+
+    try {
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      return this.parseResults(response.data);
+    } catch (error) {
+      console.error('SPARQL conflict query failed:', error);
+      return { conflicts: [], error: error.message };
+    }
+  }
+
+  // Get synergistic combinations (TESTED - 25 results ✅) - FILTERED VERSION
+  async getSynergisticCombos(ingredientNames) {
+    const query = `
+      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      
+      SELECT ?ing1 ?name1 ?ing2 ?name2 ?benefit1 ?benefit2 ?recommendation
+      WHERE {
+        ?ing1 rdf:type :Ingredient ;
+              :IngredientName ?name1 ;
+              :synergisticWith ?ing2 ;
+              :providesIngredientBenefit ?benefit1 .
+              
+        ?ing2 :IngredientName ?name2 ;
+              :providesIngredientBenefit ?benefit2 .
+        
+        FILTER NOT EXISTS {
+          {?ing1 :incompatibleWith ?ing2} UNION
+          {?ing2 :incompatibleWith ?ing1}
+        }
+        
+        FILTER(?name1 IN (${ingredientNames.map(name => `"${name}"`).join(', ')}))
+        FILTER(?name2 IN (${ingredientNames.map(name => `"${name}"`).join(', ')}))
+        FILTER(?ing1 != ?ing2)
+        
+        BIND("✅ RECOMMENDED COMBO" as ?recommendation)
+      }
+      ORDER BY ?name1 ?name2
+    `;
+
+    try {
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      return this.parseResults(response.data);
+    } catch (error) {
+      console.error('SPARQL synergy query failed:', error);
+      return { synergies: [], error: error.message };
+    }
+  }
+
+  // Get ALL synergistic combinations (tanpa filter) - untuk endpoint /synergistic-combos
+  async getAllSynergisticCombos() {
+    const query = `
+      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      
+      SELECT ?ing1 ?name1 ?ing2 ?name2 ?benefit1 ?benefit2 ?recommendation
+      WHERE {
+        ?ing1 rdf:type :Ingredient ;
+              :IngredientName ?name1 ;
+              :synergisticWith ?ing2 ;
+              :providesIngredientBenefit ?benefit1 .
+              
+        ?ing2 :IngredientName ?name2 ;
+              :providesIngredientBenefit ?benefit2 .
+        
+        FILTER NOT EXISTS {
+          {?ing1 :incompatibleWith ?ing2} UNION
+          {?ing2 :incompatibleWith ?ing1}
+        }
+        
+        FILTER(?ing1 != ?ing2)
+        
+        BIND("✅ RECOMMENDED COMBO" as ?recommendation)
+      }
+      ORDER BY ?name1 ?name2
+    `;
+
+    try {
+      const startTime = Date.now();
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      const result = this.parseResults(response.data);
+      const queryTime = Date.now() - startTime;
+      
+      return {
+        ...result,
+        queryTime,
+        performance: `${result.count} results in ${queryTime}ms`
+      };
+    } catch (error) {
+      console.error('SPARQL synergy query failed:', error);
+      return { data: [], count: 0, error: error.message };
+    }
+  }
+
+  // Get skin type recommendations 
+  async getSkinTypeRecommendations(skinType, concerns = []) {
+    const concernsFilter = concerns.length > 0 
+      ? `FILTER EXISTS { ?ing :treatsConcern ?concern . FILTER(?concern IN (${concerns.map(c => `:${c}`).join(', ')})) }`
+      : '';
+
+    const query = `
+      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      
+      SELECT ?ingredient ?name ?benefit ?function ?explanation
+      WHERE {
+        ?ingredient a :Ingredient ;
+                   :IngredientName ?name ;
+                   :recommendedFor :${skinType} ;
+                   :providesIngredientBenefit ?benefit ;
+                   :hasFunction ?function ;
+                   :explanation ?explanation .
+        
+        ${concernsFilter}
+      }
+      ORDER BY ?name
+    `;
+
+    try {
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      return this.parseResults(response.data);
+    } catch (error) {
+      console.error('SPARQL recommendation query failed:', error);
+      return { recommendations: [], error: error.message };
+    }
+  }
+
+  // Parse SPARQL results to JSON
+  parseResults(data) {
+    if (!data.results || !data.results.bindings) {
+      return { data: [], count: 0 };
+    }
+
+    const results = data.results.bindings.map(binding => {
+      const result = {};
+      Object.keys(binding).forEach(key => {
+        result[key] = binding[key].value;
+      });
+      return result;
+    });
+
+    return { data: results, count: results.length };
+  }
+
+  // Health check for Fuseki connection
+  async healthCheck() {
+    try {
+      const query = 'SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }';
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      const count = this.parseResults(response.data);
+      return { 
+        status: 'connected', 
+        tripleCount: count.data[0]?.count || 0,
+        endpoint: this.fusekiEndpoint 
+      };
+    } catch (error) {
+      return { status: 'disconnected', error: error.message };
+    }
+  }
+}
+
+module.exports = new OntologyService();
