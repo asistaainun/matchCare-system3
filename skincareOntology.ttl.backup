@@ -1,0 +1,633 @@
+PREFIX :     <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sc:   <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+PREFIX xml:  <http://www.w3.org/XML/1998/namespace>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+
+sc:hasFunction  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Function .
+
+sc:Oily  rdf:type  sc:SkinType , owl:NamedIndividual .
+
+sc:imageURL  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:anyURI .
+
+sc:SkinType  rdf:type  owl:Class;
+        rdfs:comment  "Classification of different skin types for skincare recommendations";
+        rdfs:label    "Skin Type" .
+
+sc:HyaluronicAcidIngredient
+        rdf:type                      owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Hyaluronic Acid";
+        sc:ActualFunctions            "HumectantA substance that promotes retention of moisture.MoisturisingTo add or restore moistureSkin ConditioningTo hydrate and soften skin";
+        sc:AlternativeNames           "Hyaluronan;Prevalence;Somewhat common;Percentage of products that contain it;HYALURONIC ACID";
+        sc:IngredientName             "Hyaluronic Acid";
+        sc:alcoholFree                true;
+        sc:explanation                "Hyaluronic acid is naturally found in healthy skin. It is a humectant, meaning it draws moisture to your skin.This ingredient helps hydrate, soothe, and protect the skin.What makes hyaluronic acid so hydrating? It has the capacity to bind or hold large amounts of water.Fun fact: It is already natura...";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:Exfoliant , sc:SkinConditioning , sc:Moisturizing , sc:Humectant;
+        sc:isKeyIngredientType        sc:KeyIngredient;
+        sc:pregnancySafe              true;
+        sc:providesIngredientBenefit  sc:Hydrating;
+        sc:recommendedFor             sc:Normal , sc:Dry;
+        sc:synergisticWith            sc:NiacinamideIngredient , sc:SalicylicAcidIngredient , sc:Peptides , sc:Niacinamide , sc:Ceramides;
+        sc:treatsConcern              sc:Dryness .
+
+sc:FragranceFree  rdf:type      owl:NamedIndividual , sc:FormulationTrait;
+        sc:excludeAllergenType  sc:Fragrance .
+
+sc:Wrinkles  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:potentiatesEffectOf
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Ingredient .
+
+sc:MineralUVFilter  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label         "Mineral UV Filter";
+        sc:recommendedFor  sc:Oily .
+
+sc:belongsToBrand  rdf:type  owl:ObjectProperty;
+        rdfs:domain    sc:Product;
+        rdfs:range     sc:Brand;
+        owl:inverseOf  sc:hasProduct .
+
+sc:Ampoules  rdf:type    owl:Class;
+        rdfs:comment     "Highly concentrated treatment product";
+        rdfs:label       "Ampoules";
+        rdfs:subClassOf  sc:Treatment .
+
+sc:FungalAcne  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:AllergenType  rdf:type  owl:Class;
+        rdfs:label  "Allergen Type" .
+
+sc:ReducesLargePores  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:fragranceFree  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product , sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:GoodForTexture  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:AHA  rdf:type                      owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Alpha Hydroxy Acid";
+        sc:hasFunction                sc:Exfoliant;
+        sc:incompatibleWith           sc:Retinoid , sc:BHA;
+        sc:providesIngredientBenefit  sc:GoodForTexture , sc:Brightening;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Combination .
+
+sc:Chelating  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:AntiAcne  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:AlternativeNames  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:string .
+
+sc:Suncare  rdf:type     owl:Class;
+        rdfs:comment     "Sun protection products";
+        rdfs:label       "Suncare";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:FineLines  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:Retinoid  rdf:type                 owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Retinoid";
+        sc:incompatibleWith           sc:AHA , sc:VitaminC , sc:SalicylicAcidIngredient , sc:BHA;
+        sc:providesIngredientBenefit  sc:GoodForTexture , sc:HelpsWithAntiAging;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
+        sc:treatsConcern              sc:Wrinkles , sc:FineLines , sc:Texture , sc:Acne .
+
+sc:NiacinamideIngredient
+        rdf:type                      owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Niacinamide";
+        sc:ActualFunctions            "SmoothingTo smooth a surface, to remove roughness";
+        sc:AlternativeNames           "Vitamin B3Nicotinamide3-Pyridinecarboxamide;Vitamin B3;Nicotinamide;3-Pyridinecarboxamide;Prevalence";
+        sc:IngredientName             "Niacinamide";
+        sc:alcoholFree                true;
+        sc:explanation                "Niacinamide is a multitasking form of vitamin B3 that strengthens the skin barrier, reduces pores and dark spots, regulates oil, and improves signs of aging.And the best part? It's gentle and well-tolerated by most skin types, including sensitive and reactive skin.You might have heard of \"niacin flu...";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:AntiAcne;
+        sc:isKeyIngredientType        sc:KeyIngredient;
+        sc:pregnancySafe              true;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:ReduceRedness , sc:OilControl;
+        sc:recommendedFor             sc:Normal;
+        sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:SalicylicAcidIngredient , sc:HyaluronicAcid , sc:Ceramides;
+        sc:treatsConcern              sc:Redness .
+
+sc:AscorbicAcidIngredient
+        rdf:type                      owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Ascorbic Acid";
+        sc:ActualFunctions            "Antioxidant, Skin Conditioning, Masking";
+        sc:AlternativeNames           "Vitamin C";
+        sc:IngredientName             "Ascorbic Acid";
+        sc:alcoholFree                true;
+        sc:explanation                "Ascorbic Acid, or Vitamin C, is an antioxidant that helps to brighten the skin, reduce hyperpigmentation, and protect skin cells from oxidative stress. It stimulates collagen production, which helps improve skin elasticity.";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:Masking , sc:SkinConditioning , sc:Antioxidant;
+        sc:incompatibleWith           sc:RetinolIngredient;
+        sc:pregnancySafe              true;
+        sc:providesIngredientBenefit  sc:AntiAging , sc:BarrierRepair , sc:Brightening;
+        sc:recommendedFor             sc:Normal , sc:Dry;
+        sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:VitaminE;
+        sc:treatsConcern              sc:FineLines , sc:DarkSpots;
+        sc:usageInstructions          "Apply in the morning to clean skin, followed by sunscreen" .
+
+sc:TestProduct2  rdf:type      owl:NamedIndividual , sc:Product;
+        rdfs:label             "Test Serum";
+        sc:BPOMNumber          "NA12345678902";
+        sc:BrandName           "Test Brand";
+        sc:HowToUse            "Apply 2-3 drops to clean face";
+        sc:IngredientList      "Water, Niacinamide, Hyaluronic Acid, Glycerin";
+        sc:MainCategory        "Treatment";
+        sc:ProductDescription  "A hydrating serum with niacinamide";
+        sc:ProductName         "Test Serum";
+        sc:alcoholFree         true;
+        sc:belongsToCategory   sc:Treatment;
+        sc:fragranceFree       true;
+        sc:hasKeyIngredient    sc:Niacinamide , sc:HyaluronicAcid;
+        sc:parabenFree         true;
+        sc:siliconeFree        true;
+        sc:sulfateFree         true .
+
+sc:Treatment  rdf:type   owl:Class;
+        rdfs:comment     "Specialized treatment products for specific skin concerns";
+        rdfs:label       "Treatment";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:providesBenefit  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:Benefit .
+
+sc:Dullness  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:isKeyIngredientType
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:KeyIngredient .
+
+sc:Antimicrobial  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:mayAggravateConcern
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinConcern .
+
+sc:VitaminC  rdf:type                 owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Vitamin C";
+        sc:hasFunction                sc:Antioxidant;
+        sc:incompatibleWith           sc:Retinoid , sc:SalicylicAcidIngredient;
+        sc:providesIngredientBenefit  sc:Brightening , sc:HelpsWithDarkSpots;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
+        sc:synergisticWith            sc:VitaminE;
+        sc:treatsConcern              sc:DarkSpots .
+
+sc:suitableForSkinType
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:SkinType .
+
+sc:Moisturizer  rdf:type  owl:Class;
+        rdfs:comment     "Products that hydrate and moisturize skin";
+        rdfs:label       "Moisturizer";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:Abrasive  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:ActualFunctions  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:string .
+
+sc:sulfateFree  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product , sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:SalicylicAcidIngredient
+        rdf:type                      owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Salicylic Acid";
+        sc:ActualFunctions            "MaskingObscuring or blockingPreservativeTending to preserve or capable of preserving.Skin ConditioningTo hydrate and soften skin";
+        sc:AlternativeNames           "SALICYLIC ACID;salicylic acid;200-712-3";
+        sc:IngredientName             "Salicylic Acid";
+        sc:alcoholFree                true;
+        sc:explanation                "Salicylic Acid (also known asbeta hydroxy acidorBHA) is one of the most well-known ingredients for treating skin that struggles with blackheads and acne. It helps to exfoliate both the skin's surface and pores, and also acts as an anti-inflammatory agent.This multitasking property makes it a great i...";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:AntiAcne , sc:Exfoliant , sc:Preservative , sc:SkinConditioning;
+        sc:incompatibleWith           sc:Retinoid , sc:VitaminC , sc:RetinolIngredient;
+        sc:isKeyIngredientType        sc:KeyIngredient;
+        sc:pregnancySafe              false;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter , sc:OilControl , sc:Hydrating;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
+        sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:NiacinamideIngredient , sc:Niacinamide;
+        sc:treatsConcern              sc:Dryness , sc:Acne;
+        sc:usageInstructions          "Evening use recommended; Start 2-3x per week; Always use SPF" .
+
+sc:Brightening  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:belongsToCategory  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:ProductCategory .
+
+sc:UVFilter  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:foundInProduct  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Product .
+
+sc:hasAllergenType  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:AllergenType .
+
+sc:Surfactant  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:AcneFighter  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:Antioxidants  rdf:type  owl:NamedIndividual , sc:KeyIngredient .
+
+sc:explanation  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:string .
+
+sc:HelpsWithAntiAging
+        rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:hasProduct  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Brand;
+        rdfs:range   sc:Product .
+
+sc:ProductDescription
+        rdf:type     owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:ReduceRedness  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:KeyIngredient  rdf:type  owl:Class;
+        rdfs:label  "Key Ingredient" .
+
+sc:ProductCategory  rdf:type  owl:Class;
+        rdfs:label  "Product Category" .
+
+sc:recommendedFor  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinType .
+
+sc:Exfoliators  rdf:type  owl:NamedIndividual , sc:KeyIngredient .
+
+sc:Peptides  rdf:type       owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label          "Peptides";
+        sc:synergisticWith  sc:HyaluronicAcid .
+
+sc:Exfoliant  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:productURL  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:anyURI .
+
+sc:Emollient  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:treatsConcern  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinConcern .
+
+sc:targetsConcern  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:SkinConcern .
+
+sc:avoidFor  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinType .
+
+sc:SkinConcern  rdf:type  owl:Class;
+        rdfs:label  "Skin Concern" .
+
+sc:Sensitivity  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:Dryness  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:IngredientName  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:string .
+
+sc:Texture  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:similarTo  rdf:type  owl:SymmetricProperty , owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:Product .
+
+sc:hasKeyIngredient  rdf:type  owl:ObjectProperty;
+        rdfs:domain    sc:Product;
+        rdfs:range     sc:KeyIngredient;
+        owl:inverseOf  sc:isKeyIngredientOf .
+
+sc:requiresPrecaution
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinType .
+
+sc:VitaminE  rdf:type       owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label          "Vitamin E";
+        sc:hasFunction      sc:Antioxidant;
+        sc:recommendedFor   sc:Combination;
+        sc:synergisticWith  sc:VitaminC .
+
+sc:Benefit  rdf:type  owl:Class;
+        rdfs:label  "Benefit" .
+
+sc:ParabenFree  rdf:type        owl:NamedIndividual , sc:FormulationTrait;
+        sc:excludeAllergenType  sc:Paraben .
+
+sc:TestProduct1  rdf:type      owl:NamedIndividual , sc:Product;
+        rdfs:label             "Test Cleanser";
+        sc:BPOMNumber          "NA12345678901";
+        sc:BrandName           "Test Brand";
+        sc:HowToUse            "Apply to wet face, massage gently, rinse with water";
+        sc:IngredientList      "Water, Salicylic Acid, Hyaluronic Acid, Glycerin";
+        sc:MainCategory        "Cleanser";
+        sc:ProductDescription  "A gentle cleanser for all skin types";
+        sc:ProductName         "Test Cleanser";
+        sc:alcoholFree         true;
+        sc:belongsToCategory   sc:Cleanser;
+        sc:fragranceFree       false;
+        sc:hasKeyIngredient    sc:SalicylicAcid , sc:HyaluronicAcid;
+        sc:parabenFree         true;
+        sc:siliconeFree        true;
+        sc:sulfateFree         false .
+
+sc:Buffering  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:pregnancySafe  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:ReducesIrritation  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:Silicone  rdf:type  sc:AllergenType , owl:NamedIndividual .
+
+sc:HowToUse  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:Brand  rdf:type  owl:Class;
+        rdfs:label  "Brand" .
+
+sc:incompatibleWith  rdf:type  owl:SymmetricProperty , owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Ingredient .
+
+sc:Preservative  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:usageInstructions  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   xsd:string .
+
+sc:parabenFree  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product , sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:Niacinamide  rdf:type              owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Niacinamide";
+        sc:hasFunction                sc:SkinConditioning;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:Brightening , sc:ReduceRedness , sc:OilControl;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
+        sc:synergisticWith            sc:HyaluronicAcid , sc:Ceramides;
+        sc:treatsConcern              sc:Oiliness , sc:Redness .
+
+sc:HelpsWithDarkSpots
+        rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:Subcategory  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:isKeyIngredientOf  rdf:type  owl:ObjectProperty;
+        rdfs:domain  sc:KeyIngredient;
+        rdfs:range   sc:Product .
+
+<http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology>
+        rdf:type  owl:Ontology .
+
+sc:ProductName  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:providesIngredientBenefit
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Benefit .
+
+sc:OilControl  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:LocalImagePath  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:IngredientList  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:SulfateFree  rdf:type        owl:NamedIndividual , sc:FormulationTrait;
+        sc:excludeAllergenType  sc:Sulfate .
+
+sc:AlcoholFree  rdf:type        owl:NamedIndividual , sc:FormulationTrait;
+        sc:excludeAllergenType  sc:Alcohol .
+
+sc:Fragrance  rdf:type  sc:AllergenType , owl:NamedIndividual .
+
+sc:Normal  rdf:type  sc:SkinType , owl:NamedIndividual .
+
+sc:Sulfate  rdf:type  sc:AllergenType , owl:NamedIndividual .
+
+sc:GlycolicAcidIngredient
+        rdf:type                      owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Glycolic Acid";
+        sc:ActualFunctions            "Exfoliant, Buffering";
+        sc:AlternativeNames           "AHA";
+        sc:IngredientName             "Glycolic Acid";
+        sc:alcoholFree                true;
+        sc:explanation                "Glycolic Acid is a type of Alpha Hydroxy Acid (AHA) used to exfoliate the skin by removing dead skin cells. It helps to smooth skin texture, even out skin tone, and reduce signs of aging by stimulating collagen production.";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:Exfoliant , sc:Buffering;
+        sc:incompatibleWith           sc:RetinolIngredient;
+        sc:pregnancySafe              false;
+        sc:providesIngredientBenefit  sc:TextureImprovement , sc:Brightening;
+        sc:recommendedFor             sc:Oily , sc:Normal;
+        sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:NiacinamideIngredient;
+        sc:treatsConcern              sc:Texture , sc:Hyperpigmentation;
+        sc:usageInstructions          "Apply 2-3 times a week, preferably in the evening. Always follow with SPF" .
+
+sc:Alcohol  rdf:type  sc:AllergenType , owl:NamedIndividual .
+
+sc:Dry  rdf:type  sc:SkinType , owl:NamedIndividual .
+
+sc:Hydrating  rdf:type  owl:NamedIndividual , sc:Benefit .
+
+sc:BPOMNumber  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:Cleanser  rdf:type    owl:Class;
+        rdfs:comment     "Products used for cleansing the face";
+        rdfs:label       "Cleanser";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:Occlusive  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:synergisticWith  rdf:type  owl:SymmetricProperty , owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:Ingredient .
+
+sc:SkinProtecting  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:RetinolIngredient  rdf:type        owl:NamedIndividual , sc:Ingredient;
+        rdfs:label                    "Retinol";
+        sc:ActualFunctions            "Skin Conditioning, Moisturizing";
+        sc:AlternativeNames           "Vitamin A";
+        sc:IngredientName             "Retinol";
+        sc:alcoholFree                true;
+        sc:explanation                "Retinol is a gold-standard ingredient for anti-aging. It is a form of Vitamin A and belongs to the class of retinoids that also includes tretinoin. Retinol has numerous benefits including increasing cell turnover, reducing wrinkles, and improving skin texture.";
+        sc:fragranceFree              true;
+        sc:hasFunction                sc:AntiAging , sc:Exfoliant , sc:SkinConditioning , sc:Moisturizing;
+        sc:incompatibleWith           sc:AscorbicAcidIngredient , sc:SalicylicAcidIngredient , sc:GlycolicAcidIngredient;
+        sc:pregnancySafe              false;
+        sc:providesIngredientBenefit  sc:AntiAging , sc:TextureImprovement , sc:Hydrating;
+        sc:recommendedFor             sc:Normal , sc:Dry;
+        sc:synergisticWith            sc:NiacinamideIngredient , sc:CeramideIngredient;
+        sc:treatsConcern              sc:Wrinkles , sc:FineLines;
+        sc:usageInstructions          "Evening use recommended; Start 1-2x per week; Always use SPF" .
+
+sc:Product  rdf:type     owl:Class;
+        rdfs:subClassOf  owl:Thing .
+
+sc:Masking  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:containsIngredient
+        rdf:type       owl:ObjectProperty;
+        rdfs:comment   "Product contains this ingredient";
+        rdfs:domain    sc:Product;
+        rdfs:range     sc:Ingredient;
+        owl:inverseOf  sc:foundInProduct .
+
+sc:Ingredient  rdf:type  owl:Class;
+        rdfs:label  "Ingredient" .
+
+sc:Eczema  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:EyeCare  rdf:type     owl:Class;
+        rdfs:comment     "Products specifically for eye area";
+        rdfs:label       "Eye Care";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:Paraben  rdf:type  sc:AllergenType , owl:NamedIndividual .
+
+sc:Soothing  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:excludeAllergenType
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:FormulationTrait;
+        rdfs:range   sc:AllergenType .
+
+sc:Pores  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:Oiliness  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:BrandName  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Brand;
+        rdfs:range   xsd:string .
+
+sc:LipCare  rdf:type     owl:Class;
+        rdfs:comment     "Products specifically for lip care";
+        rdfs:label       "Lip Care";
+        rdfs:subClassOf  sc:ProductCategory .
+
+sc:Combination  rdf:type  sc:SkinType , owl:NamedIndividual .
+
+sc:ChemicalUVFilter  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label  "Chemical UV Filter" .
+
+sc:Panthenol  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label      "Panthenol";
+        sc:hasFunction  sc:Soothing .
+
+sc:FormulationTrait  rdf:type  owl:Class;
+        rdfs:label  "Formulation Trait" .
+
+sc:alcoholFree  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product , sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:HyaluronicAcid  rdf:type           owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Hyaluronic Acid";
+        sc:hasFunction                sc:Humectant;
+        sc:providesIngredientBenefit  sc:Hydrating , sc:SkinConditioning , sc:Moisturizing;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
+        sc:treatsConcern              sc:Sensitivity , sc:Dryness , sc:Redness .
+
+sc:Ceramides  rdf:type                owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Ceramides";
+        sc:hasFunction                sc:Emollient , sc:Occlusive;
+        sc:providesIngredientBenefit  sc:ReducesIrritation , sc:Hydrating;
+        sc:recommendedFor             sc:Normal , sc:Dry;
+        sc:synergisticWith            sc:Niacinamide , sc:HyaluronicAcid;
+        sc:treatsConcern              sc:Sensitivity .
+
+sc:AcneTreatment  rdf:type  owl:Class;
+        rdfs:comment     "Specialized product for treating acne";
+        rdfs:label       "Acne Treatment";
+        rdfs:subClassOf  sc:Treatment .
+
+sc:DarkUndereyes  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:contraindicatedFor
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Ingredient;
+        rdfs:range   sc:SkinConcern .
+
+sc:BHA  rdf:type                      owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label                    "Beta Hydroxy Acid";
+        sc:hasFunction                sc:Exfoliant;
+        sc:incompatibleWith           sc:AHA , sc:Retinoid , sc:VitaminC;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter;
+        sc:recommendedFor             sc:Oily , sc:Normal , sc:Combination;
+        sc:treatsConcern              sc:Texture , sc:Pores , sc:Acne .
+
+sc:MainCategory  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   xsd:string .
+
+sc:SkinConditioning  rdf:type  owl:NamedIndividual , sc:Benefit , sc:Function .
+
+sc:DarkSpots  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:Moisturizing  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:Acne  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:SiliconeFree  rdf:type       owl:NamedIndividual , sc:FormulationTrait;
+        sc:excludeAllergenType  sc:Silicone .
+
+sc:Antioxidant  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:Function  rdf:type  owl:Class;
+        rdfs:label  "Function" .
+
+sc:Redness  rdf:type  owl:NamedIndividual , sc:SkinConcern .
+
+sc:hasFormulationTrait
+        rdf:type     owl:ObjectProperty;
+        rdfs:domain  sc:Product;
+        rdfs:range   sc:FormulationTrait .
+
+sc:Humectant  rdf:type  owl:NamedIndividual , sc:Function .
+
+sc:siliconeFree  rdf:type  owl:DatatypeProperty;
+        rdfs:domain  sc:Product , sc:Ingredient;
+        rdfs:range   xsd:boolean .
+
+sc:PHA  rdf:type        owl:NamedIndividual , sc:KeyIngredient;
+        rdfs:label      "Polyhydroxy Acid";
+        sc:hasFunction  sc:Exfoliant .

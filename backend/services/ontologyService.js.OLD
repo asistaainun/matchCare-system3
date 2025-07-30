@@ -3,7 +3,7 @@ const axios = require('axios');
 
 class OntologyService {
   constructor() {
-    this.fusekiEndpoint = 'http://localhost:3030/skincare-db/query';
+    this.fusekiEndpoint = 'http://localhost:3030/skincare-db/sparql';
     this.updateEndpoint = 'http://localhost:3030/skincare-db/update';
     
     // ✅ FIXED: Add missing RDF prefix that was causing all queries to fail
