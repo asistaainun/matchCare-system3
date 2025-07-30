@@ -7,6 +7,7 @@ const compression = require('compression');
 const helmet = require('helmet');
 const { Pool } = require('pg');
 const axios = require('axios');
+const hybridEngine = require('./services/hybridRecommendationEngine');
 require('dotenv').config();
 
 const app = express();
@@ -2112,6 +2113,68 @@ app.get('/api/utility/ingredient-glossary', async (req, res) => {
       error: error.message
     });
   }
+});
+
+// ===== HYBRID RECOMMENDATION ROUTES =====
+app.post('/api/guest/recommendations', async (req, res) => {
+    try {
+        const guestProfile = req.body;
+        
+        console.log('👤 Guest recommendation request:', guestProfile);
+        
+        // Validate input
+        if (!guestProfile.skin_type) {
+            return res.status(400).json({
+                success: false,
+                message: 'Skin type is required'
+            });
+        }
+        
+        // Use hybrid recommendation engine
+        const recommendations = await hybridEngine.getPersonalizedRecommendations(guestProfile);
+        
+        res.json({
+            success: true,
+            session_id: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            data: recommendations,
+            message: `Found ${recommendations.recommendations.length} personalized recommendations`
+        });
+        
+    } catch (error) {
+        console.error('❌ Guest recommendation error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate recommendations',
+            error: error.message
+        });
+    }
+});
+
+// Test endpoint untuk hybrid engine
+app.get('/api/test/hybrid-engine', async (req, res) => {
+    try {
+        const testProfile = {
+            skin_type: 'oily',
+            concerns: ['acne', 'pores'],
+            sensitivities: ['fragrance']
+        };
+        
+        const recommendations = await hybridEngine.getPersonalizedRecommendations(testProfile);
+        
+        res.json({
+            success: true,
+            test_profile: testProfile,
+            recommendations: recommendations,
+            message: 'Hybrid engine test successful'
+        });
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            message: 'Hybrid engine test failed'
+        });
+    }
 });
 
 // ===== HELPER FUNCTIONS =====
