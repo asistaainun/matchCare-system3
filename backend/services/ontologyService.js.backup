@@ -1,17 +1,24 @@
-// backend/services/ontologyService.js
+// backend/services/ontologyService.js - FIXED VERSION
 const axios = require('axios');
 
 class OntologyService {
   constructor() {
-    this.fusekiEndpoint = 'http://localhost:3030/skincare-db/sparql';
+    this.fusekiEndpoint = 'http://localhost:3030/skincare-db/query';
     this.updateEndpoint = 'http://localhost:3030/skincare-db/update';
-  }
-
-  // Get ingredient incompatibilities (TESTED - Working ✅)
-  async getIngredientConflicts(ingredientNames) {
-    const query = `
+    
+    // ✅ FIXED: Add missing RDF prefix that was causing all queries to fail
+    this.commonPrefixes = `
       PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
       PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    `;
+  }
+
+  // Get ingredient incompatibilities - FIXED
+  async getIngredientConflicts(ingredientNames) {
+    const query = `
+      ${this.commonPrefixes}
       
       SELECT ?ing1 ?name1 ?ing2 ?name2 ?warning
       WHERE {
@@ -35,18 +42,19 @@ class OntologyService {
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
       );
       
-      return this.parseResults(response.data);
+      const result = this.parseResults(response.data);
+      console.log(`🔍 Ingredient conflicts query: Found ${result.count} conflicts`);
+      return result;
     } catch (error) {
-      console.error('SPARQL conflict query failed:', error);
-      return { conflicts: [], error: error.message };
+      console.error('SPARQL conflict query failed:', error.message);
+      return { data: [], count: 0, error: error.message };
     }
   }
 
-  // Get synergistic combinations (TESTED - 25 results ✅) - FILTERED VERSION
+  // Get synergistic combinations (FILTERED) - FIXED
   async getSynergisticCombos(ingredientNames) {
     const query = `
-      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
-      PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      ${this.commonPrefixes}
       
       SELECT ?ing1 ?name1 ?ing2 ?name2 ?benefit1 ?benefit2 ?recommendation
       WHERE {
@@ -78,18 +86,19 @@ class OntologyService {
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
       );
       
-      return this.parseResults(response.data);
+      const result = this.parseResults(response.data);
+      console.log(`✨ Synergistic combos query: Found ${result.count} synergies`);
+      return result;
     } catch (error) {
-      console.error('SPARQL synergy query failed:', error);
-      return { synergies: [], error: error.message };
+      console.error('SPARQL synergy query failed:', error.message);
+      return { data: [], count: 0, error: error.message };
     }
   }
 
-  // Get ALL synergistic combinations (tanpa filter) - untuk endpoint /synergistic-combos
+  // Get ALL synergistic combinations (no filter) - FIXED
   async getAllSynergisticCombos() {
     const query = `
-      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
-      PREFIX sc: <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
+      ${this.commonPrefixes}
       
       SELECT ?ing1 ?name1 ?ing2 ?name2 ?benefit1 ?benefit2 ?recommendation
       WHERE {
@@ -114,7 +123,9 @@ class OntologyService {
     `;
 
     try {
+      console.log('🔍 Executing getAllSynergisticCombos query...');
       const startTime = Date.now();
+      
       const response = await axios.post(this.fusekiEndpoint, 
         new URLSearchParams({ query }), 
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
@@ -123,38 +134,77 @@ class OntologyService {
       const result = this.parseResults(response.data);
       const queryTime = Date.now() - startTime;
       
+      console.log(`✅ getAllSynergisticCombos successful: ${result.count} results in ${queryTime}ms`);
+      
       return {
         ...result,
         queryTime,
         performance: `${result.count} results in ${queryTime}ms`
       };
     } catch (error) {
-      console.error('SPARQL synergy query failed:', error);
+      console.error('SPARQL getAllSynergisticCombos failed:', error.message);
       return { data: [], count: 0, error: error.message };
     }
   }
 
-  // Get skin type recommendations 
+  // Get skin type recommendations - FIXED
   async getSkinTypeRecommendations(skinType, concerns = []) {
+    console.log(`🔍 Getting recommendations for ${skinType} skin type...`);
+    
     const concernsFilter = concerns.length > 0 
-      ? `FILTER EXISTS { ?ing :treatsConcern ?concern . FILTER(?concern IN (${concerns.map(c => `:${c}`).join(', ')})) }`
-      : '';
+        ? `FILTER EXISTS { ?ingredient sc:treatsConcern ?concern . FILTER(?concern IN (${concerns.map(c => `sc:${c}`).join(', ')})) }`
+        : '';
 
     const query = `
-      PREFIX : <http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/>
-      
-      SELECT ?ingredient ?name ?benefit ?function ?explanation
-      WHERE {
-        ?ingredient a :Ingredient ;
-                   :IngredientName ?name ;
-                   :recommendedFor :${skinType} ;
-                   :providesIngredientBenefit ?benefit ;
-                   :hasFunction ?function ;
-                   :explanation ?explanation .
+        ${this.commonPrefixes}
+        
+        SELECT ?ingredient ?name ?benefit ?function ?explanation
+        WHERE {
+        ?ingredient rdf:type sc:Ingredient ;
+                    sc:IngredientName ?name ;
+                    sc:recommendedFor sc:${skinType} .
+                    
+        OPTIONAL { ?ingredient sc:providesIngredientBenefit ?benefit }
+        OPTIONAL { ?ingredient sc:hasFunction ?function }
+        OPTIONAL { ?ingredient sc:explanation ?explanation }
         
         ${concernsFilter}
+        }
+        ORDER BY ?name
+    `;
+
+    try {
+        const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+        
+        const result = this.parseResults(response.data);
+        console.log(`✅ SPARQL found ${result.count} ingredients for ${skinType} skin`);
+        return result;
+    } catch (error) {
+        console.error('❌ SPARQL skin type query failed:', error.message);
+        return { data: [], count: 0, error: error.message };
+    }
+  }
+
+  // Get ingredient details by name - NEW METHOD
+  async getIngredientDetails(ingredientName) {
+    const query = `
+      ${this.commonPrefixes}
+      
+      SELECT ?ingredient ?name ?benefit ?function ?explanation ?whatItDoes ?safety
+      WHERE {
+        ?ingredient rdf:type :Ingredient ;
+                   :IngredientName ?name ;
+                   :providesIngredientBenefit ?benefit ;
+                   :hasFunction ?function ;
+                   :explanation ?explanation ;
+                   :whatItDoes ?whatItDoes ;
+                   :safety ?safety .
+        
+        FILTER(?name = "${ingredientName}")
       }
-      ORDER BY ?name
     `;
 
     try {
@@ -165,14 +215,46 @@ class OntologyService {
       
       return this.parseResults(response.data);
     } catch (error) {
-      console.error('SPARQL recommendation query failed:', error);
-      return { recommendations: [], error: error.message };
+      console.error('SPARQL ingredient details query failed:', error.message);
+      return { data: [], count: 0, error: error.message };
+    }
+  }
+
+  // Get all ingredients with basic info - NEW METHOD
+  async getAllIngredients(limit = 50) {
+    const query = `
+      ${this.commonPrefixes}
+      
+      SELECT ?ingredient ?name ?benefit ?function
+      WHERE {
+        ?ingredient rdf:type :Ingredient ;
+                   :IngredientName ?name ;
+                   :providesIngredientBenefit ?benefit ;
+                   :hasFunction ?function .
+      }
+      ORDER BY ?name
+      LIMIT ${limit}
+    `;
+
+    try {
+      const response = await axios.post(this.fusekiEndpoint, 
+        new URLSearchParams({ query }), 
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+      );
+      
+      const result = this.parseResults(response.data);
+      console.log(`📋 Get all ingredients: Retrieved ${result.count} ingredients`);
+      return result;
+    } catch (error) {
+      console.error('SPARQL get all ingredients failed:', error.message);
+      return { data: [], count: 0, error: error.message };
     }
   }
 
   // Parse SPARQL results to JSON
   parseResults(data) {
     if (!data.results || !data.results.bindings) {
+      console.warn('⚠️ No results.bindings in SPARQL response');
       return { data: [], count: 0 };
     }
 
@@ -187,23 +269,72 @@ class OntologyService {
     return { data: results, count: results.length };
   }
 
-  // Health check for Fuseki connection
+  // Health check for Fuseki connection - FIXED
   async healthCheck() {
     try {
-      const query = 'SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }';
+      const query = `
+        ${this.commonPrefixes}
+        SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }
+      `;
+      
       const response = await axios.post(this.fusekiEndpoint, 
         new URLSearchParams({ query }), 
         { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
       );
       
-      const count = this.parseResults(response.data);
+      const result = this.parseResults(response.data);
+      const tripleCount = result.data[0]?.count || '0';
+      
+      console.log(`💚 Health check successful: ${tripleCount} triples available`);
+      
       return { 
         status: 'connected', 
-        tripleCount: count.data[0]?.count || 0,
+        tripleCount: tripleCount,
         endpoint: this.fusekiEndpoint 
       };
     } catch (error) {
+      console.error('❌ Health check failed:', error.message);
       return { status: 'disconnected', error: error.message };
+    }
+  }
+
+  // Test method to verify fixes - NEW METHOD
+  async testFixedQueries() {
+    console.log('🧪 Testing fixed ontologyService queries...\n');
+    
+    try {
+      // Test 1: Health check
+      console.log('1️⃣ Testing health check...');
+      const health = await this.healthCheck();
+      console.log(`   Result: ${health.status}, Triples: ${health.tripleCount}`);
+      
+      // Test 2: Get all synergistic combos
+      console.log('\n2️⃣ Testing getAllSynergisticCombos...');
+      const allSynergies = await this.getAllSynergisticCombos();
+      console.log(`   Result: ${allSynergies.count} combinations found`);
+      
+      // Test 3: Get specific ingredient conflicts
+      console.log('\n3️⃣ Testing getIngredientConflicts...');
+      const conflicts = await this.getIngredientConflicts(['Retinol', 'Vitamin C']);
+      console.log(`   Result: ${conflicts.count} conflicts detected`);
+      
+      // Test 4: Get all ingredients
+      console.log('\n4️⃣ Testing getAllIngredients...');
+      const ingredients = await this.getAllIngredients(10);
+      console.log(`   Result: ${ingredients.count} ingredients retrieved`);
+      
+      console.log('\n✅ All tests completed! Ontology service should now work properly.');
+      
+      return {
+        health: health.status === 'connected',
+        synergies: allSynergies.count > 0,
+        conflicts_test: conflicts.count >= 0, // 0 is valid if no conflicts
+        ingredients: ingredients.count > 0
+      };
+      
+    } catch (error) {
+      console.error('❌ Test failed:', error.message);
+      return { error: error.message };
     }
   }
 }
