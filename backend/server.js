@@ -1,6 +1,6 @@
 // backend/server.js - UPDATED FOR TRUE ONTOLOGY-BASED SYSTEM
 // 🎓 CRITICAL: Replace hybrid engine dengan ontology engine untuk skripsi
-
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
@@ -9,7 +9,6 @@ const { Pool } = require('pg');
 
 // 🎓 CRITICAL CHANGE: Ganti dari hybridEngine ke ontologyEngine
 const ontologyEngine = require('./services/ontologyBasedRecommendationEngine');
-require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
