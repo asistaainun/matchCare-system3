@@ -1,6 +1,39 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
+// Test di HomePage.js atau ProductsPage.js
+import { testSystemHealth, getOntologyRecommendations } from '../services/api';
+
+// Test function
+const testOntology = async () => {
+  try {
+    console.log('🧪 Testing ontology integration...');
+    
+    // Test system health
+    const health = await testSystemHealth();
+    console.log('🏥 System health:', health);
+    
+    // Test ontology recommendations
+    const recommendations = await getOntologyRecommendations({
+      skin_type: 'oily',
+      concerns: ['acne'],
+      sensitivities: []
+    });
+    
+    console.log('🧠 Ontology test successful:', recommendations);
+    alert(`Success! Got ${recommendations.recommendations.length} recommendations`);
+    
+  } catch (error) {
+    console.error('❌ Test failed:', error);
+    alert('Test failed: ' + error.message);
+  }
+};
+
+// Add test button to UI
+<button onClick={testOntology} className="bg-green-500 text-white px-4 py-2 rounded">
+  🧪 Test Ontology
+</button>
+
 const HomePage = () => {
   return (
     <div className="min-h-screen">
