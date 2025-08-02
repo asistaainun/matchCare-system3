@@ -44,13 +44,6 @@ class OntologyService {
         { name: 'Salicylic Acid', benefit: 'T-zone Control', function: 'exfoliant', explanation: 'Controls oiliness specifically in T-zone' },
         { name: 'Zinc PCA', benefit: 'Sebum Regulation', function: 'sebum-regulating', explanation: 'Regulates oil production in oily areas' },
         { name: 'Panthenol', benefit: 'Soothing', function: 'skin conditioning', explanation: 'Soothes different skin zones' }
-      ],
-      sensitive: [
-        { name: 'Centella Asiatica', benefit: 'Calming', function: 'anti-inflammatory', explanation: 'Soothes and calms sensitive skin' },
-        { name: 'Allantoin', benefit: 'Soothing', function: 'skin conditioning', explanation: 'Reduces irritation in sensitive skin' },
-        { name: 'Hyaluronic Acid', benefit: 'Gentle Hydration', function: 'humectant', explanation: 'Provides hydration without irritation' },
-        { name: 'Colloidal Oatmeal', benefit: 'Barrier Protection', function: 'skin protecting', explanation: 'Protects and soothes sensitive skin' },
-        { name: 'Aloe Vera', benefit: 'Anti-inflammatory', function: 'anti-inflammatory', explanation: 'Natural anti-inflammatory for sensitive skin' }
       ]
     };
 
@@ -59,7 +52,7 @@ class OntologyService {
       { name1: 'Vitamin C', name2: 'Hyaluronic Acid', benefit1: 'Brightening', benefit2: 'Hydrating', recommendation: '✅ GREAT MORNING COMBO' },
       { name1: 'Niacinamide', name2: 'Salicylic Acid', benefit1: 'Oil Control', benefit2: 'Acne Fighter', recommendation: '✅ POWERFUL OILY SKIN COMBO' },
       { name1: 'Ceramides', name2: 'Hyaluronic Acid', benefit1: 'Skin Barrier', benefit2: 'Hydrating', recommendation: '✅ PERFECT DRY SKIN COMBO' },
-      { name1: 'Centella Asiatica', name2: 'Allantoin', benefit1: 'Calming', benefit2: 'Soothing', recommendation: '✅ IDEAL SENSITIVE SKIN COMBO' }
+      { name1: 'Centella Asiatica', name2: 'Allantoin', benefit1: 'Calming', benefit2: 'Soothing', recommendation: '✅ IDEAL DRY SKIN COMBO' }
     ];
   }
 

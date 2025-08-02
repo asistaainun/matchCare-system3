@@ -1,4 +1,4 @@
-// backend/routes/ingredients.js - COMPLETE ONTOLOGY-BASED INGREDIENT ENDPOINTS
+// backend/routes/ingredients.js - FIXED ONTOLOGY-BASED INGREDIENT ENDPOINTS
 const express = require('express');
 const router = express.Router();
 const ontologyService = require('../services/ontologyService');
@@ -167,7 +167,7 @@ router.get('/:ingredientName', async (req, res) => {
               synergy.name2.toLowerCase() === ingredientName.toLowerCase()
             )
           },
-          safety_notes: this.generateSafetyNotes(conflicts.data, synergies.data, ingredientName)
+          safety_notes: router.generateSafetyNotes(conflicts.data, synergies.data, ingredientName)
         };
       }
     } catch (error) {
@@ -176,7 +176,7 @@ router.get('/:ingredientName', async (req, res) => {
 
     // Find products containing this ingredient
     console.log('📦 Finding products containing this ingredient...');
-    const productsWithIngredient = await this.findProductsWithIngredient(ingredientName);
+    const productsWithIngredient = await router.findProductsWithIngredient(ingredientName);
 
     res.json({
       success: true,
@@ -236,21 +236,21 @@ router.post('/compatibility-check', async (req, res) => {
       conflict_analysis: {
         total_conflicts: conflicts.count,
         conflicts_found: conflicts.data,
-        risk_level: this.calculateRiskLevel(conflicts.count, ingredients.length),
-        safety_warnings: this.generateSafetyWarnings(conflicts.data)
+        risk_level: router.calculateRiskLevel(conflicts.count, ingredients.length),
+        safety_warnings: router.generateSafetyWarnings(conflicts.data)
       },
       
       synergy_analysis: {
         total_synergies: synergies.count,
         synergies_found: synergies.data,
-        enhancement_potential: this.calculateEnhancementPotential(synergies.count),
-        beneficial_combinations: this.extractBeneficialCombinations(synergies.data)
+        enhancement_potential: router.calculateEnhancementPotential(synergies.count),
+        beneficial_combinations: router.extractBeneficialCombinations(synergies.data)
       },
       
       overall_assessment: {
-        compatibility_score: this.calculateCompatibilityScore(conflicts.count, synergies.count, ingredients.length),
-        recommendation: this.generateOverallRecommendation(conflicts.count, synergies.count),
-        usage_guidance: this.generateUsageGuidance(conflicts.data, synergies.data),
+        compatibility_score: router.calculateCompatibilityScore(conflicts.count, synergies.count, ingredients.length),
+        recommendation: router.generateOverallRecommendation(conflicts.count, synergies.count),
+        usage_guidance: router.generateUsageGuidance(conflicts.data, synergies.data),
         safety_status: conflicts.count > 0 ? 'CAUTION_NEEDED' : 'SAFE'
       },
       
@@ -301,12 +301,12 @@ router.post('/synergies', async (req, res) => {
       synergies_found: {
         total: synergies.count,
         combinations: synergies.data,
-        enhancement_score: this.calculateEnhancementScore(synergies.data)
+        enhancement_score: router.calculateEnhancementScore(synergies.data)
       },
       recommendations: {
-        best_combinations: this.getBestCombinations(synergies.data),
-        usage_tips: this.generateSynergyUsageTips(synergies.data),
-        potential_benefits: this.extractPotentialBenefits(synergies.data)
+        best_combinations: router.getBestCombinations(synergies.data),
+        usage_tips: router.generateSynergyUsageTips(synergies.data),
+        potential_benefits: router.extractPotentialBenefits(synergies.data)
       },
       ontology_analysis: {
         knowledge_graph_used: true,
@@ -352,12 +352,12 @@ router.post('/conflicts', async (req, res) => {
       conflicts_detected: {
         total: conflicts.count,
         conflict_pairs: conflicts.data,
-        risk_assessment: this.assessConflictRisk(conflicts.data)
+        risk_assessment: router.assessConflictRisk(conflicts.data)
       },
       safety_recommendations: {
-        immediate_actions: this.generateImmediateActions(conflicts.data),
-        alternative_approaches: this.suggestAlternatives(conflicts.data),
-        usage_warnings: this.generateConflictWarnings(conflicts.data)
+        immediate_actions: router.generateImmediateActions(conflicts.data),
+        alternative_approaches: router.suggestAlternatives(conflicts.data),
+        usage_warnings: router.generateConflictWarnings(conflicts.data)
       },
       ontology_analysis: {
         semantic_analysis: 'complete',

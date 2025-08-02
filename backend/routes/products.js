@@ -1,4 +1,4 @@
-// backend/routes/products.js - COMPLETE ONTOLOGY-BASED PRODUCT ENDPOINTS
+// backend/routes/products.js - FIXED ONTOLOGY-BASED PRODUCT ENDPOINTS
 const express = require('express');
 const router = express.Router();
 const { Pool } = require('pg');
@@ -268,8 +268,8 @@ router.get('/:id', async (req, res) => {
             count: synergies.count,
             details: synergies.data.slice(0, 5) // Show top 5 synergies
           },
-          safety_assessment: this.generateSafetyAssessment(conflicts.count, synergies.count),
-          compatibility_score: this.calculateCompatibilityScore(conflicts.count, synergies.count, ingredientNames.length),
+          safety_assessment: router.generateSafetyAssessment(conflicts.count, synergies.count),
+          compatibility_score: router.calculateCompatibilityScore(conflicts.count, synergies.count, ingredientNames.length),
           ontology_powered: true,
           analysis_timestamp: new Date().toISOString()
         };
@@ -282,7 +282,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // 🎯 GET SIMILAR PRODUCTS (Ontology-based)
-    const similarProducts = await this.getSimilarProductsViaOntology(product, ingredientNames);
+    const similarProducts = await router.getSimilarProductsViaOntology(product, ingredientNames);
 
     res.json({
       success: true,
@@ -392,7 +392,7 @@ router.post('/recommendations', async (req, res) => {
         const productIngredients = ontologyService.parseIngredientList(product.ingredient_list || '');
         
         // Calculate ontology match score
-        const matchScore = this.calculateOntologyMatchScore(
+        const matchScore = router.calculateOntologyMatchScore(
           productIngredients, 
           ontologyIngredients.data
         );
@@ -409,7 +409,7 @@ router.post('/recommendations', async (req, res) => {
             safetyAnalysis = {
               conflicts: conflicts.count,
               synergies: synergies.count,
-              score: this.calculateSafetyScore(conflicts.count, synergies.count)
+              score: router.calculateSafetyScore(conflicts.count, synergies.count)
             };
           } catch (error) {
             console.warn(`Safety analysis failed for ${product.name}`);
@@ -426,7 +426,7 @@ router.post('/recommendations', async (req, res) => {
           matched_ontology_ingredients: productIngredients.filter(ing => 
             recommendedIngredientNames.some(rec => rec.includes(ing.toLowerCase()))
           ),
-          recommendation_reason: this.generateRecommendationReason(matchScore, safetyAnalysis, skinType)
+          recommendation_reason: router.generateRecommendationReason(matchScore, safetyAnalysis, skinType)
         };
       })
     );

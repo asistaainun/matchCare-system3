@@ -410,8 +410,7 @@ app.get('/api/recommendations/:session_id', async (req, res) => {
       1: 'normal',
       2: 'dry', 
       3: 'oily',
-      4: 'combination',
-      5: 'sensitive'
+      4: 'combination'
     };
     
     const concernMapping = {
@@ -522,6 +521,15 @@ app.use((err, req, res, next) => {
     message: 'Internal server error',
     algorithm_type: 'TRUE_ONTOLOGY_BASED',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+app.use((err, req, res, next) => {
+  console.error('API Error:', err);
+  res.status(500).json({
+    success: false,
+    error: err.message,
+    ontology_powered: true
   });
 });
 
