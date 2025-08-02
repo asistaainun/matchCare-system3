@@ -35,6 +35,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// ===== ADD THESE IMPORTS AT THE TOP =====
+const productRoutes = require('./routes/products');
+const ingredientRoutes = require('./routes/ingredients');
+
+// ===== ADD THESE ROUTES AFTER YOUR EXISTING ROUTES =====
+
+// 🧠 ONTOLOGY-POWERED PRODUCT ROUTES (Critical for thesis)
+app.use('/api/products', productRoutes);
+
+// 🧠 ONTOLOGY-POWERED INGREDIENT ROUTES (Critical for thesis) 
+app.use('/api/ingredients', ingredientRoutes);
+
 // ===== ONTOLOGY ANALYSIS ROUTES =====
 const analysisRoutes = require('./routes/analysis');
 app.use('/api/analysis', analysisRoutes);
