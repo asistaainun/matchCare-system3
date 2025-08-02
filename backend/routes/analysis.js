@@ -2,7 +2,25 @@
 const express = require('express');
 const router = express.Router();
 const ontologyService = require('../services/ontologyService');
+const performanceMonitor = require('../middleware/performanceMonitor');
 
+router.get('/performance-report', (req, res) => {
+  try {
+    const report = performanceMonitor.getAcademicReport();
+    
+    res.json({
+      success: true,
+      data: report,
+      message: 'Academic performance report generated',
+      algorithm_type: 'PERFORMANCE_ANALYSIS'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 // 1. GET ALL synergistic combinations (untuk test script)
 router.get('/synergistic-combos', async (req, res) => {
   try {

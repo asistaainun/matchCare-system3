@@ -1,6 +1,6 @@
 // backend/services/ontologyService.js - FIXED CASE SENSITIVITY VERSION
 const axios = require('axios');
-
+const performanceMonitor = require('../middleware/performanceMonitor');
 class OntologyService {
   constructor() {
     this.fusekiEndpoint = 'http://localhost:3030/skincare-db/sparql';
@@ -113,20 +113,25 @@ class OntologyService {
 
   // 🎓 MAIN METHOD: Get skin type recommendations with fallback
   async getSkinTypeRecommendations(skinType, concerns = []) {
-    console.log(`🔍 Getting recommendations for ${skinType} skin type...`);
-    
-    try {
-      const realResult = await this.executeSPARQLSkinTypeQuery(skinType, concerns);
-      if (realResult.count > 0) {
-        console.log(`✅ SPARQL SUCCESS: ${realResult.count} ingredients from ontology`);
-        return realResult;
+    return await performanceMonitor.monitorOntologyOperation(
+      'getSkinTypeRecommendations', 
+      async () => {
+        console.log(`🔍 Getting recommendations for ${skinType} skin type...`);
+        
+        try {
+          const realResult = await this.executeSPARQLSkinTypeQuery(skinType, concerns);
+          if (realResult.count > 0) {
+            console.log(`✅ SPARQL SUCCESS: ${realResult.count} ingredients from ontology`);
+            return realResult;
+          }
+        } catch (error) {
+          console.warn(`⚠️ SPARQL failed: ${error.message}`);
+        }
+        
+        console.log(`🎭 Using MOCK data for ${skinType} skin type (Fuseki unavailable)`);
+        return this.getMockSkinTypeRecommendations(skinType, concerns);
       }
-    } catch (error) {
-      console.warn(`⚠️ SPARQL failed: ${error.message}`);
-    }
-    
-    console.log(`🎭 Using MOCK data for ${skinType} skin type (Fuseki unavailable)`);
-    return this.getMockSkinTypeRecommendations(skinType, concerns);
+    );
   }
 
   // 🚀 REAL SPARQL QUERY
@@ -190,57 +195,62 @@ class OntologyService {
 
   // ✅ FIXED: Get ingredient incompatibilities with case-insensitive matching
   async getIngredientConflicts(ingredientInput) {
-    let ingredientNames = [];
-    
-    if (Array.isArray(ingredientInput)) {
-      ingredientNames = ingredientInput.map(name => this.normalizeIngredientName(name));
-    } else if (typeof ingredientInput === 'string') {
-      ingredientNames = this.parseIngredientList(ingredientInput);
-    }
-    
-    if (ingredientNames.length === 0) {
-      return { data: [], count: 0, note: 'No recognizable ingredients found' };
-    }
-    
-    console.log(`🔍 Analyzing conflicts for: ${ingredientNames.join(', ')}`);
-    
-    try {
-      // ✅ FIXED: Use case-insensitive SPARQL query with proper filtering
-      const query = `
-        ${this.commonPrefixes}
-        
-        SELECT DISTINCT ?ing1 ?name1 ?ing2 ?name2 ?warning
-        WHERE {
-          ?ing1 rdf:type sc:Ingredient ;
-                sc:IngredientName ?name1 ;
-                sc:incompatibleWith ?ing2 .
+    return await performanceMonitor.monitorOntologyOperation(
+        'getIngredientConflicts',
+        async () => {
+          let ingredientNames = [];
+          
+          if (Array.isArray(ingredientInput)) {
+            ingredientNames = ingredientInput.map(name => this.normalizeIngredientName(name));
+          } else if (typeof ingredientInput === 'string') {
+            ingredientNames = this.parseIngredientList(ingredientInput);
+          }
+          
+          if (ingredientNames.length === 0) {
+            return { data: [], count: 0, note: 'No recognizable ingredients found' };
+          }
+          
+          console.log(`🔍 Analyzing conflicts for: ${ingredientNames.join(', ')}`);
+          
+          try {
+            // ✅ FIXED: Use case-insensitive SPARQL query with proper filtering
+            const query = `
+              ${this.commonPrefixes}
+              
+              SELECT DISTINCT ?ing1 ?name1 ?ing2 ?name2 ?warning
+              WHERE {
+                ?ing1 rdf:type sc:Ingredient ;
+                      sc:IngredientName ?name1 ;
+                      sc:incompatibleWith ?ing2 .
+                      
+                ?ing2 sc:IngredientName ?name2 .
                 
-          ?ing2 sc:IngredientName ?name2 .
-          
-          # Both ingredients must be in our input list (case-insensitive)
-          FILTER(
-            (${ingredientNames.map(name => `LCASE(?name1) = LCASE("${name}")`).join(' || ')}) &&
-            (${ingredientNames.map(name => `LCASE(?name2) = LCASE("${name}")`).join(' || ')})
-          )
-          
-          BIND("⚠️ AVOID COMBINATION" as ?warning)
-        }
-        ORDER BY ?name1 ?name2
-      `;
+                # Both ingredients must be in our input list (case-insensitive)
+                FILTER(
+                  (${ingredientNames.map(name => `LCASE(?name1) = LCASE("${name}")`).join(' || ')}) &&
+                  (${ingredientNames.map(name => `LCASE(?name2) = LCASE("${name}")`).join(' || ')})
+                )
+                
+                BIND("⚠️ AVOID COMBINATION" as ?warning)
+              }
+              ORDER BY ?name1 ?name2
+            `;
 
-      const response = await axios.post(this.fusekiEndpoint, 
-        new URLSearchParams({ query }), 
-        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-      );
-      
-      const result = this.parseResults(response.data);
-      console.log(`✅ SPARQL conflicts query: Found ${result.count} conflicts`);
-      return { ...result, ingredients_analyzed: ingredientNames };
-      
-    } catch (error) {
-      console.warn('SPARQL conflict query failed, using mock:', error.message);
-      return this.getMockConflicts(ingredientNames);
-    }
+            const response = await axios.post(this.fusekiEndpoint, 
+              new URLSearchParams({ query }), 
+              { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+            );
+            
+            const result = this.parseResults(response.data);
+            console.log(`✅ SPARQL conflicts query: Found ${result.count} conflicts`);
+            return { ...result, ingredients_analyzed: ingredientNames };
+            
+          } catch (error) {
+            console.warn('SPARQL conflict query failed, using mock:', error.message);
+            return this.getMockConflicts(ingredientNames);
+          }
+        }
+    );
   }
 
   // ✅ FIXED: Get synergistic combinations with case-insensitive matching  
