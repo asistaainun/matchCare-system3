@@ -34,34 +34,67 @@ const ProductDetailPage = () => {
       console.log(`🔍 Loading product detail for ID: ${id}`);
       
       // 1. Load basic product info
-      const productResponse = await fetch(`http://localhost:3001/api/products/${id}`);
+      const productResponse = await fetch(`http://localhost:5000/api/products/${id}`);
       
       if (!productResponse.ok) {
         throw new Error(`Product not found (${productResponse.status})`);
       }
 
       const productData = await productResponse.json();
-      
-      if (!productData.success) {
-        throw new Error(productData.message || 'Failed to load product');
+      console.log('🔍 Raw API Response:', productData);
+
+      // Handle response structure - PERBAIKAN DI SINI
+      if (!productData.success || !productData.product) {
+        throw new Error('Product data not found in response');
       }
 
-      console.log('✅ Product loaded:', productData.data.name);
-      setProduct(productData.data);
+      const product = productData.product;
+      console.log('✅ Processed Product:', product);
+      setProduct(product);
 
-      // 2. Load ingredient analysis (ontology-based)
-      if (productData.data.ingredient_list) {
-        await loadIngredientAnalysis(productData.data.ingredient_list, productData.data.key_ingredients_csv);
+      // 2. Load ingredient analysis (ontology-based) - PERBAIKAN DI SINI
+      const ingredients = product.ingredients || [];
+      if (ingredients.length > 0) {
+        await loadIngredientAnalysis(ingredients);
+      } else {
+        // Fallback: parse from description if available
+        await parseIngredientsFromDescription(product.description);
       }
 
       // 3. Load similar products (ontology recommendations)
-      await loadSimilarProducts(productData.data);
+      await loadSimilarProducts(product);
 
     } catch (error) {
       console.error('❌ Product detail error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Parse ingredients from product description as fallback
+  const parseIngredientsFromDescription = async (description) => {
+    try {
+      if (!description) return;
+      
+      // Look for ingredient mentions in description
+      const ingredientMatches = description.match(/Mengandung ([^.]+)/);
+      if (ingredientMatches) {
+        const extractedIngredients = ingredientMatches[1]
+          .split(' dan ')
+          .map(ing => ing.trim());
+        
+        const ingredientAnalysis = extractedIngredients.map(ingredient => ({
+          name: ingredient,
+          isKey: true,
+          ontologyData: null
+        }));
+        
+        setIngredients(ingredientAnalysis);
+        console.log(`✅ Parsed ${ingredientAnalysis.length} ingredients from description`);
+      }
+    } catch (error) {
+      console.error('❌ Description parsing error:', error);
     }
   };
 
@@ -79,7 +112,7 @@ const ProductDetailPage = () => {
       
       for (const ingredient of keyIngredientsArray.slice(0, 5)) { // Limit to 5 key ingredients
         try {
-          const response = await fetch(`http://localhost:3001/api/ingredients/search?q=${encodeURIComponent(ingredient)}&limit=1`);
+          const response = await fetch(`http://localhost:5000/api/ingredients?search=${encodeURIComponent(ingredient)}&limit=1`);
           const data = await response.json();
           
           if (data.success && data.data.length > 0) {
@@ -192,7 +225,7 @@ const ProductDetailPage = () => {
         limit: '4'
       });
 
-      const response = await fetch(`http://localhost:3001/api/products?${params}`);
+      const response = await fetch(`http://localhost:5000/api/products?${params}`);
       const data = await response.json();
 
       if (data.success) {

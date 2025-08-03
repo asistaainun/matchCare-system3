@@ -1,7 +1,8 @@
 // src/services/api.js - UPDATED FOR ONTOLOGY INTEGRATION
 import axios from 'axios';
+import API_CONFIG, { apiCall } from '../config/api';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Create axios instance
 const api = axios.create({
@@ -117,6 +118,26 @@ export const getBrandDetail = async (brandId) => {
     return response.data;
   } catch (error) {
     throw new Error(`Failed to fetch brand ${brandId}: ${error.message}`);
+  }
+};
+
+// 🧬 Ingredients API - NEW
+export const getIngredients = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams(params);
+    const data = await apiCall(`/api/ingredients?${queryParams}`);
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to fetch ingredients: ${error.message}`);
+  }
+};
+
+export const getIngredientDetail = async (ingredientName) => {
+  try {
+    const data = await apiCall(`/api/ingredients/${encodeURIComponent(ingredientName)}`);
+    return data;
+  } catch (error) {
+    throw new Error(`Failed to fetch ingredient ${ingredientName}: ${error.message}`);
   }
 };
 
