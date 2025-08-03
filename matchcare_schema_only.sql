@@ -5,7 +5,7 @@
 -- Dumped from database version 17.5
 -- Dumped by pg_dump version 17.5
 
--- Started on 2025-07-30 08:42:12
+-- Started on 2025-08-03 12:54:14
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -21,7 +21,7 @@ SET row_security = off;
 
 DROP DATABASE IF EXISTS matchcare_fresh_db;
 --
--- TOC entry 5419 (class 1262 OID 75691)
+-- TOC entry 5425 (class 1262 OID 75691)
 -- Name: matchcare_fresh_db; Type: DATABASE; Schema: -; Owner: -
 --
 
@@ -51,7 +51,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 
 --
--- TOC entry 5420 (class 0 OID 0)
+-- TOC entry 5426 (class 0 OID 0)
 -- Dependencies: 3
 -- Name: EXTENSION pg_trgm; Type: COMMENT; Schema: -; Owner: -
 --
@@ -68,7 +68,7 @@ CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
 
 
 --
--- TOC entry 5421 (class 0 OID 0)
+-- TOC entry 5427 (class 0 OID 0)
 -- Dependencies: 4
 -- Name: EXTENSION unaccent; Type: COMMENT; Schema: -; Owner: -
 --
@@ -85,7 +85,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 
 --
--- TOC entry 5422 (class 0 OID 0)
+-- TOC entry 5428 (class 0 OID 0)
 -- Dependencies: 2
 -- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: -
 --
@@ -141,7 +141,7 @@ CREATE SEQUENCE public.allergen_types_id_seq
 
 
 --
--- TOC entry 5423 (class 0 OID 0)
+-- TOC entry 5429 (class 0 OID 0)
 -- Dependencies: 232
 -- Name: allergen_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -287,7 +287,7 @@ CREATE SEQUENCE public.brands_id_seq
 
 
 --
--- TOC entry 5424 (class 0 OID 0)
+-- TOC entry 5430 (class 0 OID 0)
 -- Dependencies: 228
 -- Name: brands_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -325,7 +325,7 @@ CREATE SEQUENCE public.formulation_traits_id_seq
 
 
 --
--- TOC entry 5425 (class 0 OID 0)
+-- TOC entry 5431 (class 0 OID 0)
 -- Dependencies: 234
 -- Name: formulation_traits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -364,7 +364,7 @@ CREATE SEQUENCE public.guest_sessions_id_seq
 
 
 --
--- TOC entry 5426 (class 0 OID 0)
+-- TOC entry 5432 (class 0 OID 0)
 -- Dependencies: 269
 -- Name: guest_sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -401,7 +401,7 @@ CREATE SEQUENCE public.ingredient_benefits_id_seq
 
 
 --
--- TOC entry 5427 (class 0 OID 0)
+-- TOC entry 5433 (class 0 OID 0)
 -- Dependencies: 238
 -- Name: ingredient_benefits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -437,7 +437,7 @@ CREATE SEQUENCE public.ingredient_benefits_map_id_seq
 
 
 --
--- TOC entry 5428 (class 0 OID 0)
+-- TOC entry 5434 (class 0 OID 0)
 -- Dependencies: 275
 -- Name: ingredient_benefits_map_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -473,7 +473,7 @@ CREATE SEQUENCE public.ingredient_functions_id_seq
 
 
 --
--- TOC entry 5429 (class 0 OID 0)
+-- TOC entry 5435 (class 0 OID 0)
 -- Dependencies: 236
 -- Name: ingredient_functions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -508,7 +508,7 @@ CREATE SEQUENCE public.ingredient_functions_map_id_seq
 
 
 --
--- TOC entry 5430 (class 0 OID 0)
+-- TOC entry 5436 (class 0 OID 0)
 -- Dependencies: 273
 -- Name: ingredient_functions_map_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -559,7 +559,7 @@ CREATE SEQUENCE public.ingredient_relationships_id_seq
 
 
 --
--- TOC entry 5431 (class 0 OID 0)
+-- TOC entry 5437 (class 0 OID 0)
 -- Dependencies: 253
 -- Name: ingredient_relationships_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -618,7 +618,7 @@ CREATE SEQUENCE public.ingredients_id_seq
 
 
 --
--- TOC entry 5432 (class 0 OID 0)
+-- TOC entry 5438 (class 0 OID 0)
 -- Dependencies: 248
 -- Name: ingredients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -654,7 +654,7 @@ CREATE SEQUENCE public.key_ingredient_synonyms_id_seq
 
 
 --
--- TOC entry 5433 (class 0 OID 0)
+-- TOC entry 5439 (class 0 OID 0)
 -- Dependencies: 290
 -- Name: key_ingredient_synonyms_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -695,7 +695,7 @@ CREATE SEQUENCE public.key_ingredient_types_id_seq
 
 
 --
--- TOC entry 5434 (class 0 OID 0)
+-- TOC entry 5440 (class 0 OID 0)
 -- Dependencies: 244
 -- Name: key_ingredient_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -732,7 +732,7 @@ CREATE SEQUENCE public.product_categories_id_seq
 
 
 --
--- TOC entry 5435 (class 0 OID 0)
+-- TOC entry 5441 (class 0 OID 0)
 -- Dependencies: 230
 -- Name: product_categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -768,7 +768,7 @@ CREATE SEQUENCE public.product_formulation_traits_id_seq
 
 
 --
--- TOC entry 5436 (class 0 OID 0)
+-- TOC entry 5442 (class 0 OID 0)
 -- Dependencies: 255
 -- Name: product_formulation_traits_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -823,7 +823,7 @@ CREATE SEQUENCE public.product_ingredients_id_seq
 
 
 --
--- TOC entry 5437 (class 0 OID 0)
+-- TOC entry 5443 (class 0 OID 0)
 -- Dependencies: 250
 -- Name: product_ingredients_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -874,7 +874,7 @@ CREATE SEQUENCE public.product_match_scores_id_seq
 
 
 --
--- TOC entry 5438 (class 0 OID 0)
+-- TOC entry 5444 (class 0 OID 0)
 -- Dependencies: 271
 -- Name: product_match_scores_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -932,7 +932,7 @@ CREATE SEQUENCE public.products_id_seq
 
 
 --
--- TOC entry 5439 (class 0 OID 0)
+-- TOC entry 5445 (class 0 OID 0)
 -- Dependencies: 246
 -- Name: products_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -973,7 +973,7 @@ CREATE SEQUENCE public.quiz_results_id_seq
 
 
 --
--- TOC entry 5440 (class 0 OID 0)
+-- TOC entry 5446 (class 0 OID 0)
 -- Dependencies: 281
 -- Name: quiz_results_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1012,7 +1012,7 @@ CREATE SEQUENCE public.recommendation_cache_id_seq
 
 
 --
--- TOC entry 5441 (class 0 OID 0)
+-- TOC entry 5447 (class 0 OID 0)
 -- Dependencies: 279
 -- Name: recommendation_cache_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1048,7 +1048,7 @@ CREATE SEQUENCE public.skin_concerns_id_seq
 
 
 --
--- TOC entry 5442 (class 0 OID 0)
+-- TOC entry 5448 (class 0 OID 0)
 -- Dependencies: 242
 -- Name: skin_concerns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1084,7 +1084,7 @@ CREATE SEQUENCE public.skin_types_id_seq
 
 
 --
--- TOC entry 5443 (class 0 OID 0)
+-- TOC entry 5449 (class 0 OID 0)
 -- Dependencies: 240
 -- Name: skin_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1133,7 +1133,7 @@ CREATE SEQUENCE public.user_favorites_id_seq
 
 
 --
--- TOC entry 5444 (class 0 OID 0)
+-- TOC entry 5450 (class 0 OID 0)
 -- Dependencies: 267
 -- Name: user_favorites_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1173,7 +1173,7 @@ CREATE SEQUENCE public.user_ingredient_preferences_id_seq
 
 
 --
--- TOC entry 5445 (class 0 OID 0)
+-- TOC entry 5451 (class 0 OID 0)
 -- Dependencies: 265
 -- Name: user_ingredient_preferences_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1218,7 +1218,7 @@ CREATE SEQUENCE public.user_profiles_id_seq
 
 
 --
--- TOC entry 5446 (class 0 OID 0)
+-- TOC entry 5452 (class 0 OID 0)
 -- Dependencies: 259
 -- Name: user_profiles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1256,7 +1256,7 @@ CREATE SEQUENCE public.user_sensitivities_id_seq
 
 
 --
--- TOC entry 5447 (class 0 OID 0)
+-- TOC entry 5453 (class 0 OID 0)
 -- Dependencies: 261
 -- Name: user_sensitivities_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1306,7 +1306,7 @@ CREATE SEQUENCE public.user_skin_concerns_id_seq
 
 
 --
--- TOC entry 5448 (class 0 OID 0)
+-- TOC entry 5454 (class 0 OID 0)
 -- Dependencies: 263
 -- Name: user_skin_concerns_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1347,7 +1347,7 @@ CREATE SEQUENCE public.users_id_seq
 
 
 --
--- TOC entry 5449 (class 0 OID 0)
+-- TOC entry 5455 (class 0 OID 0)
 -- Dependencies: 257
 -- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
@@ -1653,7 +1653,7 @@ ALTER TABLE ONLY public.formulation_traits
 
 
 --
--- TOC entry 5197 (class 2606 OID 76181)
+-- TOC entry 5200 (class 2606 OID 76181)
 -- Name: guest_sessions guest_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1662,7 +1662,7 @@ ALTER TABLE ONLY public.guest_sessions
 
 
 --
--- TOC entry 5199 (class 2606 OID 76183)
+-- TOC entry 5202 (class 2606 OID 76183)
 -- Name: guest_sessions guest_sessions_session_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1671,7 +1671,7 @@ ALTER TABLE ONLY public.guest_sessions
 
 
 --
--- TOC entry 5213 (class 2606 OID 76288)
+-- TOC entry 5217 (class 2606 OID 76288)
 -- Name: ingredient_benefits_map ingredient_benefits_map_ingredient_id_benefit_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1680,7 +1680,7 @@ ALTER TABLE ONLY public.ingredient_benefits_map
 
 
 --
--- TOC entry 5215 (class 2606 OID 76286)
+-- TOC entry 5219 (class 2606 OID 76286)
 -- Name: ingredient_benefits_map ingredient_benefits_map_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1707,7 +1707,7 @@ ALTER TABLE ONLY public.ingredient_benefits
 
 
 --
--- TOC entry 5208 (class 2606 OID 76269)
+-- TOC entry 5212 (class 2606 OID 76269)
 -- Name: ingredient_functions_map ingredient_functions_map_ingredient_id_function_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1716,7 +1716,7 @@ ALTER TABLE ONLY public.ingredient_functions_map
 
 
 --
--- TOC entry 5210 (class 2606 OID 76267)
+-- TOC entry 5214 (class 2606 OID 76267)
 -- Name: ingredient_functions_map ingredient_functions_map_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1743,7 +1743,7 @@ ALTER TABLE ONLY public.ingredient_functions
 
 
 --
--- TOC entry 5217 (class 2606 OID 76306)
+-- TOC entry 5222 (class 2606 OID 76306)
 -- Name: ingredient_key_types ingredient_key_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1752,7 +1752,7 @@ ALTER TABLE ONLY public.ingredient_key_types
 
 
 --
--- TOC entry 5159 (class 2606 OID 76019)
+-- TOC entry 5162 (class 2606 OID 76019)
 -- Name: ingredient_relationships ingredient_relationships_ingredient1_id_ingredient2_id_rela_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1761,7 +1761,7 @@ ALTER TABLE ONLY public.ingredient_relationships
 
 
 --
--- TOC entry 5161 (class 2606 OID 76017)
+-- TOC entry 5164 (class 2606 OID 76017)
 -- Name: ingredient_relationships ingredient_relationships_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1770,7 +1770,7 @@ ALTER TABLE ONLY public.ingredient_relationships
 
 
 --
--- TOC entry 5138 (class 2606 OID 83987)
+-- TOC entry 5140 (class 2606 OID 83987)
 -- Name: ingredients ingredients_name_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1779,7 +1779,7 @@ ALTER TABLE ONLY public.ingredients
 
 
 --
--- TOC entry 5140 (class 2606 OID 83989)
+-- TOC entry 5142 (class 2606 OID 83989)
 -- Name: ingredients ingredients_name_key1; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1788,7 +1788,7 @@ ALTER TABLE ONLY public.ingredients
 
 
 --
--- TOC entry 5142 (class 2606 OID 83991)
+-- TOC entry 5144 (class 2606 OID 83991)
 -- Name: ingredients ingredients_name_key2; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1797,7 +1797,7 @@ ALTER TABLE ONLY public.ingredients
 
 
 --
--- TOC entry 5144 (class 2606 OID 83993)
+-- TOC entry 5146 (class 2606 OID 83993)
 -- Name: ingredients ingredients_name_key3; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1806,7 +1806,7 @@ ALTER TABLE ONLY public.ingredients
 
 
 --
--- TOC entry 5146 (class 2606 OID 75966)
+-- TOC entry 5148 (class 2606 OID 75966)
 -- Name: ingredients ingredients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1815,7 +1815,7 @@ ALTER TABLE ONLY public.ingredients
 
 
 --
--- TOC entry 5228 (class 2606 OID 93608)
+-- TOC entry 5234 (class 2606 OID 93608)
 -- Name: key_ingredient_synonyms key_ingredient_synonyms_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1869,7 +1869,7 @@ ALTER TABLE ONLY public.product_categories
 
 
 --
--- TOC entry 5163 (class 2606 OID 76037)
+-- TOC entry 5166 (class 2606 OID 76037)
 -- Name: product_formulation_traits product_formulation_traits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1878,7 +1878,7 @@ ALTER TABLE ONLY public.product_formulation_traits
 
 
 --
--- TOC entry 5165 (class 2606 OID 76039)
+-- TOC entry 5168 (class 2606 OID 76039)
 -- Name: product_formulation_traits product_formulation_traits_product_id_trait_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1887,7 +1887,7 @@ ALTER TABLE ONLY public.product_formulation_traits
 
 
 --
--- TOC entry 5151 (class 2606 OID 75979)
+-- TOC entry 5154 (class 2606 OID 75979)
 -- Name: product_ingredients product_ingredients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1896,7 +1896,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5153 (class 2606 OID 75981)
+-- TOC entry 5156 (class 2606 OID 75981)
 -- Name: product_ingredients product_ingredients_product_id_ingredient_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1905,7 +1905,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5155 (class 2606 OID 83599)
+-- TOC entry 5158 (class 2606 OID 83599)
 -- Name: product_ingredients product_ingredients_unique; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1914,7 +1914,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5157 (class 2606 OID 75996)
+-- TOC entry 5160 (class 2606 OID 75996)
 -- Name: product_key_ingredients product_key_ingredients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1923,7 +1923,7 @@ ALTER TABLE ONLY public.product_key_ingredients
 
 
 --
--- TOC entry 5203 (class 2606 OID 76198)
+-- TOC entry 5207 (class 2606 OID 76198)
 -- Name: product_match_scores product_match_scores_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1932,7 +1932,7 @@ ALTER TABLE ONLY public.product_match_scores
 
 
 --
--- TOC entry 5205 (class 2606 OID 76200)
+-- TOC entry 5209 (class 2606 OID 76200)
 -- Name: product_match_scores product_match_scores_user_profile_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1941,7 +1941,7 @@ ALTER TABLE ONLY public.product_match_scores
 
 
 --
--- TOC entry 5133 (class 2606 OID 75938)
+-- TOC entry 5135 (class 2606 OID 75938)
 -- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1950,7 +1950,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- TOC entry 5226 (class 2606 OID 92237)
+-- TOC entry 5232 (class 2606 OID 92237)
 -- Name: quiz_results quiz_results_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1959,7 +1959,7 @@ ALTER TABLE ONLY public.quiz_results
 
 
 --
--- TOC entry 5222 (class 2606 OID 84148)
+-- TOC entry 5227 (class 2606 OID 84148)
 -- Name: recommendation_cache recommendation_cache_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1968,7 +1968,7 @@ ALTER TABLE ONLY public.recommendation_cache
 
 
 --
--- TOC entry 5224 (class 2606 OID 84150)
+-- TOC entry 5229 (class 2606 OID 84150)
 -- Name: recommendation_cache recommendation_cache_quiz_result_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2013,7 +2013,7 @@ ALTER TABLE ONLY public.skin_types
 
 
 --
--- TOC entry 5191 (class 2606 OID 76162)
+-- TOC entry 5194 (class 2606 OID 76162)
 -- Name: user_favorites user_favorites_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2022,7 +2022,7 @@ ALTER TABLE ONLY public.user_favorites
 
 
 --
--- TOC entry 5193 (class 2606 OID 76164)
+-- TOC entry 5196 (class 2606 OID 76164)
 -- Name: user_favorites user_favorites_session_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2031,7 +2031,7 @@ ALTER TABLE ONLY public.user_favorites
 
 
 --
--- TOC entry 5195 (class 2606 OID 76166)
+-- TOC entry 5198 (class 2606 OID 76166)
 -- Name: user_favorites user_favorites_user_id_product_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2040,7 +2040,7 @@ ALTER TABLE ONLY public.user_favorites
 
 
 --
--- TOC entry 5187 (class 2606 OID 76140)
+-- TOC entry 5190 (class 2606 OID 76140)
 -- Name: user_ingredient_preferences user_ingredient_preferences_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2049,7 +2049,7 @@ ALTER TABLE ONLY public.user_ingredient_preferences
 
 
 --
--- TOC entry 5189 (class 2606 OID 76142)
+-- TOC entry 5192 (class 2606 OID 76142)
 -- Name: user_ingredient_preferences user_ingredient_preferences_user_profile_id_ingredient_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2058,7 +2058,7 @@ ALTER TABLE ONLY public.user_ingredient_preferences
 
 
 --
--- TOC entry 5174 (class 2606 OID 76075)
+-- TOC entry 5177 (class 2606 OID 76075)
 -- Name: user_profiles user_profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2067,7 +2067,7 @@ ALTER TABLE ONLY public.user_profiles
 
 
 --
--- TOC entry 5177 (class 2606 OID 76095)
+-- TOC entry 5180 (class 2606 OID 76095)
 -- Name: user_sensitivities user_sensitivities_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2076,7 +2076,7 @@ ALTER TABLE ONLY public.user_sensitivities
 
 
 --
--- TOC entry 5179 (class 2606 OID 76097)
+-- TOC entry 5182 (class 2606 OID 76097)
 -- Name: user_sensitivities user_sensitivities_user_profile_id_allergen_type_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2085,7 +2085,7 @@ ALTER TABLE ONLY public.user_sensitivities
 
 
 --
--- TOC entry 5219 (class 2606 OID 84110)
+-- TOC entry 5224 (class 2606 OID 84110)
 -- Name: user_sessions user_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2094,7 +2094,7 @@ ALTER TABLE ONLY public.user_sessions
 
 
 --
--- TOC entry 5182 (class 2606 OID 76116)
+-- TOC entry 5185 (class 2606 OID 76116)
 -- Name: user_skin_concerns user_skin_concerns_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2103,7 +2103,7 @@ ALTER TABLE ONLY public.user_skin_concerns
 
 
 --
--- TOC entry 5184 (class 2606 OID 76118)
+-- TOC entry 5187 (class 2606 OID 76118)
 -- Name: user_skin_concerns user_skin_concerns_user_profile_id_skin_concern_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2112,7 +2112,7 @@ ALTER TABLE ONLY public.user_skin_concerns
 
 
 --
--- TOC entry 5167 (class 2606 OID 76064)
+-- TOC entry 5170 (class 2606 OID 76064)
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2121,7 +2121,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 5169 (class 2606 OID 76062)
+-- TOC entry 5172 (class 2606 OID 76062)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2154,7 +2154,15 @@ CREATE INDEX idx_formulation_traits_allergen ON public.formulation_traits USING 
 
 
 --
--- TOC entry 5200 (class 1259 OID 76237)
+-- TOC entry 5203 (class 1259 OID 93637)
+-- Name: idx_guest_sessions_session_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_guest_sessions_session_active ON public.guest_sessions USING btree (session_id, expires_at);
+
+
+--
+-- TOC entry 5204 (class 1259 OID 76237)
 -- Name: idx_guest_sessions_session_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2162,7 +2170,7 @@ CREATE INDEX idx_guest_sessions_session_id ON public.guest_sessions USING btree 
 
 
 --
--- TOC entry 5211 (class 1259 OID 76331)
+-- TOC entry 5215 (class 1259 OID 76331)
 -- Name: idx_ingredient_benefits_map_ingredient; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2170,7 +2178,7 @@ CREATE INDEX idx_ingredient_benefits_map_ingredient ON public.ingredient_benefit
 
 
 --
--- TOC entry 5206 (class 1259 OID 76330)
+-- TOC entry 5210 (class 1259 OID 76330)
 -- Name: idx_ingredient_functions_map_ingredient; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2178,7 +2186,15 @@ CREATE INDEX idx_ingredient_functions_map_ingredient ON public.ingredient_functi
 
 
 --
--- TOC entry 5134 (class 1259 OID 76224)
+-- TOC entry 5220 (class 1259 OID 93635)
+-- Name: idx_ingredient_key_types_composite; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_ingredient_key_types_composite ON public.ingredient_key_types USING btree (key_type_id, ingredient_id);
+
+
+--
+-- TOC entry 5136 (class 1259 OID 76224)
 -- Name: idx_ingredients_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2186,7 +2202,7 @@ CREATE INDEX idx_ingredients_active ON public.ingredients USING btree (is_active
 
 
 --
--- TOC entry 5135 (class 1259 OID 83994)
+-- TOC entry 5137 (class 1259 OID 83994)
 -- Name: idx_ingredients_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2194,7 +2210,7 @@ CREATE INDEX idx_ingredients_name ON public.ingredients USING btree (name);
 
 
 --
--- TOC entry 5136 (class 1259 OID 83995)
+-- TOC entry 5138 (class 1259 OID 83995)
 -- Name: idx_ingredients_name_search; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2210,7 +2226,7 @@ CREATE INDEX idx_product_categories_parent ON public.product_categories USING bt
 
 
 --
--- TOC entry 5147 (class 1259 OID 76227)
+-- TOC entry 5149 (class 1259 OID 76227)
 -- Name: idx_product_ingredients_ingredient; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2218,7 +2234,7 @@ CREATE INDEX idx_product_ingredients_ingredient ON public.product_ingredients US
 
 
 --
--- TOC entry 5148 (class 1259 OID 76228)
+-- TOC entry 5150 (class 1259 OID 76228)
 -- Name: idx_product_ingredients_key; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2226,7 +2242,15 @@ CREATE INDEX idx_product_ingredients_key ON public.product_ingredients USING btr
 
 
 --
--- TOC entry 5149 (class 1259 OID 76226)
+-- TOC entry 5151 (class 1259 OID 93633)
+-- Name: idx_product_ingredients_lookup; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_product_ingredients_lookup ON public.product_ingredients USING btree (ingredient_id, product_id, is_key_ingredient);
+
+
+--
+-- TOC entry 5152 (class 1259 OID 76226)
 -- Name: idx_product_ingredients_product; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2234,7 +2258,7 @@ CREATE INDEX idx_product_ingredients_product ON public.product_ingredients USING
 
 
 --
--- TOC entry 5201 (class 1259 OID 76238)
+-- TOC entry 5205 (class 1259 OID 76238)
 -- Name: idx_product_match_scores_profile; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2258,7 +2282,15 @@ CREATE INDEX idx_products_bpom_number ON public.products USING btree (bpom_numbe
 
 
 --
--- TOC entry 5119 (class 1259 OID 76211)
+-- TOC entry 5119 (class 1259 OID 93632)
+-- Name: idx_products_brand_category_active; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_brand_category_active ON public.products USING btree (brand_id, main_category, is_active) WHERE (is_active = true);
+
+
+--
+-- TOC entry 5120 (class 1259 OID 76211)
 -- Name: idx_products_brand_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2266,7 +2298,7 @@ CREATE INDEX idx_products_brand_id ON public.products USING btree (brand_id);
 
 
 --
--- TOC entry 5120 (class 1259 OID 83972)
+-- TOC entry 5121 (class 1259 OID 83972)
 -- Name: idx_products_description_search; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2274,7 +2306,7 @@ CREATE INDEX idx_products_description_search ON public.products USING gin (to_ts
 
 
 --
--- TOC entry 5121 (class 1259 OID 84042)
+-- TOC entry 5122 (class 1259 OID 84042)
 -- Name: idx_products_main_category; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2282,7 +2314,7 @@ CREATE INDEX idx_products_main_category ON public.products USING btree (main_cat
 
 
 --
--- TOC entry 5122 (class 1259 OID 84060)
+-- TOC entry 5123 (class 1259 OID 84060)
 -- Name: idx_products_main_category_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2290,7 +2322,7 @@ CREATE INDEX idx_products_main_category_id ON public.products USING btree (main_
 
 
 --
--- TOC entry 5123 (class 1259 OID 84058)
+-- TOC entry 5124 (class 1259 OID 84058)
 -- Name: idx_products_main_category_string; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2298,7 +2330,7 @@ CREATE INDEX idx_products_main_category_string ON public.products USING btree (m
 
 
 --
--- TOC entry 5124 (class 1259 OID 83963)
+-- TOC entry 5125 (class 1259 OID 83963)
 -- Name: idx_products_name; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2306,7 +2338,7 @@ CREATE INDEX idx_products_name ON public.products USING btree (name);
 
 
 --
--- TOC entry 5125 (class 1259 OID 83964)
+-- TOC entry 5126 (class 1259 OID 83964)
 -- Name: idx_products_name_search; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2314,7 +2346,7 @@ CREATE INDEX idx_products_name_search ON public.products USING gin (to_tsvector(
 
 
 --
--- TOC entry 5126 (class 1259 OID 83971)
+-- TOC entry 5127 (class 1259 OID 83971)
 -- Name: idx_products_product_type; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2322,7 +2354,7 @@ CREATE INDEX idx_products_product_type ON public.products USING btree (product_t
 
 
 --
--- TOC entry 5127 (class 1259 OID 84062)
+-- TOC entry 5128 (class 1259 OID 84062)
 -- Name: idx_products_product_url; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2330,7 +2362,7 @@ CREATE INDEX idx_products_product_url ON public.products USING btree (product_ur
 
 
 --
--- TOC entry 5128 (class 1259 OID 83973)
+-- TOC entry 5129 (class 1259 OID 83973)
 -- Name: idx_products_search; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2338,7 +2370,15 @@ CREATE INDEX idx_products_search ON public.products USING gin (to_tsvector('engl
 
 
 --
--- TOC entry 5129 (class 1259 OID 84043)
+-- TOC entry 5130 (class 1259 OID 93634)
+-- Name: idx_products_search_composite; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_products_search_composite ON public.products USING btree (main_category, is_active, created_at DESC) WHERE (is_active = true);
+
+
+--
+-- TOC entry 5131 (class 1259 OID 84043)
 -- Name: idx_products_subcategory; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2346,7 +2386,7 @@ CREATE INDEX idx_products_subcategory ON public.products USING btree (subcategor
 
 
 --
--- TOC entry 5130 (class 1259 OID 84061)
+-- TOC entry 5132 (class 1259 OID 84061)
 -- Name: idx_products_subcategory_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2354,7 +2394,7 @@ CREATE INDEX idx_products_subcategory_id ON public.products USING btree (subcate
 
 
 --
--- TOC entry 5131 (class 1259 OID 84059)
+-- TOC entry 5133 (class 1259 OID 84059)
 -- Name: idx_products_subcategory_string; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2362,7 +2402,15 @@ CREATE INDEX idx_products_subcategory_string ON public.products USING btree (sub
 
 
 --
--- TOC entry 5220 (class 1259 OID 84172)
+-- TOC entry 5230 (class 1259 OID 93636)
+-- Name: idx_quiz_results_session_completed; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_quiz_results_session_completed ON public.quiz_results USING btree (session_id, completed_at DESC);
+
+
+--
+-- TOC entry 5225 (class 1259 OID 84172)
 -- Name: idx_recommendation_cache_quiz_result; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2370,7 +2418,7 @@ CREATE INDEX idx_recommendation_cache_quiz_result ON public.recommendation_cache
 
 
 --
--- TOC entry 5185 (class 1259 OID 76236)
+-- TOC entry 5188 (class 1259 OID 76236)
 -- Name: idx_user_ingredient_preferences_profile; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2378,7 +2426,7 @@ CREATE INDEX idx_user_ingredient_preferences_profile ON public.user_ingredient_p
 
 
 --
--- TOC entry 5170 (class 1259 OID 76231)
+-- TOC entry 5173 (class 1259 OID 76231)
 -- Name: idx_user_profiles_session; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2386,7 +2434,7 @@ CREATE INDEX idx_user_profiles_session ON public.user_profiles USING btree (sess
 
 
 --
--- TOC entry 5171 (class 1259 OID 76232)
+-- TOC entry 5174 (class 1259 OID 76232)
 -- Name: idx_user_profiles_skin_type; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2394,7 +2442,7 @@ CREATE INDEX idx_user_profiles_skin_type ON public.user_profiles USING btree (sk
 
 
 --
--- TOC entry 5172 (class 1259 OID 76233)
+-- TOC entry 5175 (class 1259 OID 76233)
 -- Name: idx_user_profiles_user; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2402,7 +2450,7 @@ CREATE INDEX idx_user_profiles_user ON public.user_profiles USING btree (user_id
 
 
 --
--- TOC entry 5175 (class 1259 OID 76234)
+-- TOC entry 5178 (class 1259 OID 76234)
 -- Name: idx_user_sensitivities_profile; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2410,7 +2458,7 @@ CREATE INDEX idx_user_sensitivities_profile ON public.user_sensitivities USING b
 
 
 --
--- TOC entry 5180 (class 1259 OID 76235)
+-- TOC entry 5183 (class 1259 OID 76235)
 -- Name: idx_user_skin_concerns_profile; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -2418,7 +2466,7 @@ CREATE INDEX idx_user_skin_concerns_profile ON public.user_skin_concerns USING b
 
 
 --
--- TOC entry 5266 (class 2620 OID 76241)
+-- TOC entry 5272 (class 2620 OID 76241)
 -- Name: ingredients update_ingredients_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2426,7 +2474,7 @@ CREATE TRIGGER update_ingredients_updated_at BEFORE UPDATE ON public.ingredients
 
 
 --
--- TOC entry 5265 (class 2620 OID 76240)
+-- TOC entry 5271 (class 2620 OID 76240)
 -- Name: products update_products_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2434,7 +2482,7 @@ CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON public.products FOR E
 
 
 --
--- TOC entry 5268 (class 2620 OID 76242)
+-- TOC entry 5274 (class 2620 OID 76242)
 -- Name: user_profiles update_user_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2442,7 +2490,7 @@ CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON public.user_prof
 
 
 --
--- TOC entry 5267 (class 2620 OID 76243)
+-- TOC entry 5273 (class 2620 OID 76243)
 -- Name: users update_users_updated_at; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -2450,7 +2498,7 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users FOR EACH RO
 
 
 --
--- TOC entry 5230 (class 2606 OID 75840)
+-- TOC entry 5236 (class 2606 OID 75840)
 -- Name: formulation_traits formulation_traits_excludes_allergen_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2459,7 +2507,7 @@ ALTER TABLE ONLY public.formulation_traits
 
 
 --
--- TOC entry 5253 (class 2606 OID 76184)
+-- TOC entry 5259 (class 2606 OID 76184)
 -- Name: guest_sessions guest_sessions_converted_to_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2468,7 +2516,7 @@ ALTER TABLE ONLY public.guest_sessions
 
 
 --
--- TOC entry 5258 (class 2606 OID 76294)
+-- TOC entry 5264 (class 2606 OID 76294)
 -- Name: ingredient_benefits_map ingredient_benefits_map_benefit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2477,7 +2525,7 @@ ALTER TABLE ONLY public.ingredient_benefits_map
 
 
 --
--- TOC entry 5259 (class 2606 OID 76289)
+-- TOC entry 5265 (class 2606 OID 76289)
 -- Name: ingredient_benefits_map ingredient_benefits_map_ingredient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2486,7 +2534,7 @@ ALTER TABLE ONLY public.ingredient_benefits_map
 
 
 --
--- TOC entry 5256 (class 2606 OID 76275)
+-- TOC entry 5262 (class 2606 OID 76275)
 -- Name: ingredient_functions_map ingredient_functions_map_function_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2495,7 +2543,7 @@ ALTER TABLE ONLY public.ingredient_functions_map
 
 
 --
--- TOC entry 5257 (class 2606 OID 76270)
+-- TOC entry 5263 (class 2606 OID 76270)
 -- Name: ingredient_functions_map ingredient_functions_map_ingredient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2504,7 +2552,7 @@ ALTER TABLE ONLY public.ingredient_functions_map
 
 
 --
--- TOC entry 5260 (class 2606 OID 76307)
+-- TOC entry 5266 (class 2606 OID 76307)
 -- Name: ingredient_key_types ingredient_key_types_ingredient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2513,7 +2561,7 @@ ALTER TABLE ONLY public.ingredient_key_types
 
 
 --
--- TOC entry 5261 (class 2606 OID 76312)
+-- TOC entry 5267 (class 2606 OID 76312)
 -- Name: ingredient_key_types ingredient_key_types_key_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2522,7 +2570,7 @@ ALTER TABLE ONLY public.ingredient_key_types
 
 
 --
--- TOC entry 5240 (class 2606 OID 76020)
+-- TOC entry 5246 (class 2606 OID 76020)
 -- Name: ingredient_relationships ingredient_relationships_ingredient1_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2531,7 +2579,7 @@ ALTER TABLE ONLY public.ingredient_relationships
 
 
 --
--- TOC entry 5241 (class 2606 OID 76025)
+-- TOC entry 5247 (class 2606 OID 76025)
 -- Name: ingredient_relationships ingredient_relationships_ingredient2_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2540,7 +2588,7 @@ ALTER TABLE ONLY public.ingredient_relationships
 
 
 --
--- TOC entry 5229 (class 2606 OID 75813)
+-- TOC entry 5235 (class 2606 OID 75813)
 -- Name: product_categories product_categories_parent_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2549,7 +2597,7 @@ ALTER TABLE ONLY public.product_categories
 
 
 --
--- TOC entry 5242 (class 2606 OID 76040)
+-- TOC entry 5248 (class 2606 OID 76040)
 -- Name: product_formulation_traits product_formulation_traits_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2558,7 +2606,7 @@ ALTER TABLE ONLY public.product_formulation_traits
 
 
 --
--- TOC entry 5243 (class 2606 OID 76045)
+-- TOC entry 5249 (class 2606 OID 76045)
 -- Name: product_formulation_traits product_formulation_traits_trait_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2567,7 +2615,7 @@ ALTER TABLE ONLY public.product_formulation_traits
 
 
 --
--- TOC entry 5234 (class 2606 OID 83593)
+-- TOC entry 5240 (class 2606 OID 83593)
 -- Name: product_ingredients product_ingredients_ingredient_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2576,7 +2624,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5235 (class 2606 OID 75987)
+-- TOC entry 5241 (class 2606 OID 75987)
 -- Name: product_ingredients product_ingredients_ingredient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2585,7 +2633,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5236 (class 2606 OID 83588)
+-- TOC entry 5242 (class 2606 OID 83588)
 -- Name: product_ingredients product_ingredients_product_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2594,7 +2642,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5237 (class 2606 OID 75982)
+-- TOC entry 5243 (class 2606 OID 75982)
 -- Name: product_ingredients product_ingredients_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2603,7 +2651,7 @@ ALTER TABLE ONLY public.product_ingredients
 
 
 --
--- TOC entry 5238 (class 2606 OID 76002)
+-- TOC entry 5244 (class 2606 OID 76002)
 -- Name: product_key_ingredients product_key_ingredients_key_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2612,7 +2660,7 @@ ALTER TABLE ONLY public.product_key_ingredients
 
 
 --
--- TOC entry 5239 (class 2606 OID 75997)
+-- TOC entry 5245 (class 2606 OID 75997)
 -- Name: product_key_ingredients product_key_ingredients_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2621,7 +2669,7 @@ ALTER TABLE ONLY public.product_key_ingredients
 
 
 --
--- TOC entry 5254 (class 2606 OID 76206)
+-- TOC entry 5260 (class 2606 OID 76206)
 -- Name: product_match_scores product_match_scores_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2630,7 +2678,7 @@ ALTER TABLE ONLY public.product_match_scores
 
 
 --
--- TOC entry 5255 (class 2606 OID 76201)
+-- TOC entry 5261 (class 2606 OID 76201)
 -- Name: product_match_scores product_match_scores_user_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2639,7 +2687,7 @@ ALTER TABLE ONLY public.product_match_scores
 
 
 --
--- TOC entry 5231 (class 2606 OID 83966)
+-- TOC entry 5237 (class 2606 OID 83966)
 -- Name: products products_brand_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2648,7 +2696,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- TOC entry 5232 (class 2606 OID 84048)
+-- TOC entry 5238 (class 2606 OID 84048)
 -- Name: products products_main_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2657,7 +2705,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- TOC entry 5233 (class 2606 OID 84053)
+-- TOC entry 5239 (class 2606 OID 84053)
 -- Name: products products_subcategory_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2666,7 +2714,7 @@ ALTER TABLE ONLY public.products
 
 
 --
--- TOC entry 5263 (class 2606 OID 92238)
+-- TOC entry 5269 (class 2606 OID 92238)
 -- Name: quiz_results quiz_results_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2675,7 +2723,7 @@ ALTER TABLE ONLY public.quiz_results
 
 
 --
--- TOC entry 5264 (class 2606 OID 92243)
+-- TOC entry 5270 (class 2606 OID 92243)
 -- Name: quiz_results quiz_results_skin_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2684,7 +2732,7 @@ ALTER TABLE ONLY public.quiz_results
 
 
 --
--- TOC entry 5262 (class 2606 OID 84156)
+-- TOC entry 5268 (class 2606 OID 84156)
 -- Name: recommendation_cache recommendation_cache_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2693,7 +2741,7 @@ ALTER TABLE ONLY public.recommendation_cache
 
 
 --
--- TOC entry 5252 (class 2606 OID 76167)
+-- TOC entry 5258 (class 2606 OID 76167)
 -- Name: user_favorites user_favorites_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2702,7 +2750,7 @@ ALTER TABLE ONLY public.user_favorites
 
 
 --
--- TOC entry 5250 (class 2606 OID 76148)
+-- TOC entry 5256 (class 2606 OID 76148)
 -- Name: user_ingredient_preferences user_ingredient_preferences_ingredient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2711,7 +2759,7 @@ ALTER TABLE ONLY public.user_ingredient_preferences
 
 
 --
--- TOC entry 5251 (class 2606 OID 76143)
+-- TOC entry 5257 (class 2606 OID 76143)
 -- Name: user_ingredient_preferences user_ingredient_preferences_user_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2720,7 +2768,7 @@ ALTER TABLE ONLY public.user_ingredient_preferences
 
 
 --
--- TOC entry 5244 (class 2606 OID 76081)
+-- TOC entry 5250 (class 2606 OID 76081)
 -- Name: user_profiles user_profiles_skin_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2729,7 +2777,7 @@ ALTER TABLE ONLY public.user_profiles
 
 
 --
--- TOC entry 5245 (class 2606 OID 76076)
+-- TOC entry 5251 (class 2606 OID 76076)
 -- Name: user_profiles user_profiles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2738,7 +2786,7 @@ ALTER TABLE ONLY public.user_profiles
 
 
 --
--- TOC entry 5246 (class 2606 OID 76103)
+-- TOC entry 5252 (class 2606 OID 76103)
 -- Name: user_sensitivities user_sensitivities_allergen_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2747,7 +2795,7 @@ ALTER TABLE ONLY public.user_sensitivities
 
 
 --
--- TOC entry 5247 (class 2606 OID 76098)
+-- TOC entry 5253 (class 2606 OID 76098)
 -- Name: user_sensitivities user_sensitivities_user_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2756,7 +2804,7 @@ ALTER TABLE ONLY public.user_sensitivities
 
 
 --
--- TOC entry 5248 (class 2606 OID 76124)
+-- TOC entry 5254 (class 2606 OID 76124)
 -- Name: user_skin_concerns user_skin_concerns_skin_concern_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2765,7 +2813,7 @@ ALTER TABLE ONLY public.user_skin_concerns
 
 
 --
--- TOC entry 5249 (class 2606 OID 76119)
+-- TOC entry 5255 (class 2606 OID 76119)
 -- Name: user_skin_concerns user_skin_concerns_user_profile_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2773,7 +2821,7 @@ ALTER TABLE ONLY public.user_skin_concerns
     ADD CONSTRAINT user_skin_concerns_user_profile_id_fkey FOREIGN KEY (user_profile_id) REFERENCES public.user_profiles(id) ON DELETE CASCADE;
 
 
--- Completed on 2025-07-30 08:42:18
+-- Completed on 2025-08-03 12:54:19
 
 --
 -- PostgreSQL database dump complete

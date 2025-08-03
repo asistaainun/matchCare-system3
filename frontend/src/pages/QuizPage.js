@@ -1,127 +1,125 @@
-// 🚨 URGENT FIX: Update QuizPage.js to handle endpoint correctly
+// frontend/src/pages/QuizPage.js
+// FIXED VERSION - Complete Quiz Flow Integration
 
-// src/pages/QuizPage.js - FIXED VERSION
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { startQuiz, submitQuiz } from '../services/api';
 
 const QuizPage = () => {
-  const [quizSession, setQuizSession] = useState(null);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
-
-  // Quiz state
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showSkinTypeAssessment, setShowSkinTypeAssessment] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
   const [quizData, setQuizData] = useState({
     skin_type: '',
     concerns: [],
     sensitivities: []
   });
 
-  // Initialize quiz session
+  // Reset quiz on component mount
   useEffect(() => {
-    initializeQuiz();
+    setCurrentStep(1);
+    setQuizData({ skin_type: '', concerns: [], sensitivities: [] });
+    setError('');
+    setShowSkinTypeAssessment(false);
   }, []);
 
-  const initializeQuiz = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      // Try to start quiz session
-      const sessionData = await startQuiz();
-      setQuizSession(sessionData);
-      console.log('✅ Quiz session started:', sessionData);
-      
-    } catch (error) {
-      console.error('❌ Quiz initialization failed:', error);
-      
-      // If quiz endpoint fails, create guest session
-      setQuizSession({
-        session_id: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        guest_mode: true
-      });
-      
-      setError('Quiz server not available. Using guest mode.');
-    } finally {
-      setLoading(false);
+  // Skin types and options
+  const skinTypes = [
+    { id: 'normal', label: 'Normal', desc: 'Balanced, neither too oily nor too dry' },
+    { id: 'dry', label: 'Dry', desc: 'Often feels tight, may have flaky patches' },
+    { id: 'oily', label: 'Oily', desc: 'Shiny, especially in T-zone, prone to breakouts' },
+    { id: 'combination', label: 'Combination', desc: 'Oily T-zone, normal/dry cheeks' },
+    { id: 'unsure', label: "I'm not sure with my skin type", desc: 'Take a quick assessment to find out' }
+  ];
+
+  const concerns = [
+    'Acne', 'Wrinkles', 'Fine Lines', 'Sensitivity', 'Dryness', 
+    'Oiliness', 'Redness', 'Pores', 'Dullness', 'Texture', 
+    'Dark Spots', 'Dark Undereyes'
+  ];
+
+  const sensitivities = [
+    { id: 'fragrance', label: 'Fragrance', desc: 'Perfumes and essential oils' },
+    { id: 'alcohol', label: 'Alcohol', desc: 'Denatured alcohol in products' },
+    { id: 'silicone', label: 'Silicone', desc: 'Dimethicone and similar compounds' },
+    { id: 'none', label: 'No known sensitivities', desc: 'I can use most ingredients safely' }
+  ];
+
+  // Handle skin type selection
+  const handleSkinTypeSelect = (type) => {
+    if (type === 'unsure') {
+      setShowSkinTypeAssessment(true);
+    } else {
+      setQuizData({ ...quizData, skin_type: type });
     }
   };
 
-  const handleSkinTypeSelect = (skinType) => {
-    setQuizData(prev => ({ ...prev, skin_type: skinType }));
-    setCurrentStep(2);
+  // Handle skin type assessment completion
+  const handleAssessmentComplete = (detectedSkinType) => {
+    setQuizData({ ...quizData, skin_type: detectedSkinType });
+    setShowSkinTypeAssessment(false);
+    setCurrentStep(2); // Auto advance to next step
   };
 
-  const handleConcernsSelect = (concern) => {
-    setQuizData(prev => {
-      const concerns = prev.concerns.includes(concern)
-        ? prev.concerns.filter(c => c !== concern)
-        : [...prev.concerns, concern];
-      return { ...prev, concerns };
-    });
+  // Handle concern toggle
+  const handleConcernToggle = (concern) => {
+    const newConcerns = quizData.concerns.includes(concern)
+      ? quizData.concerns.filter(c => c !== concern)
+      : [...quizData.concerns, concern];
+    setQuizData({ ...quizData, concerns: newConcerns });
   };
 
-  const handleSensitivitiesSelect = (sensitivity) => {
-    setQuizData(prev => {
-      const sensitivities = prev.sensitivities.includes(sensitivity)
-        ? prev.sensitivities.filter(s => s !== sensitivity)
-        : [...prev.sensitivities, sensitivity];
-      return { ...prev, sensitivities };
-    });
+  // Handle sensitivity toggle
+  const handleSensitivityToggle = (sensitivity) => {
+    if (sensitivity === 'none') {
+      setQuizData({ ...quizData, sensitivities: [] });
+    } else {
+      const newSensitivities = quizData.sensitivities.includes(sensitivity)
+        ? quizData.sensitivities.filter(s => s !== sensitivity)
+        : [...quizData.sensitivities, sensitivity];
+      setQuizData({ ...quizData, sensitivities: newSensitivities });
+    }
   };
 
-  const handleSubmitQuiz = async () => {
+  // Submit quiz and get recommendations
+  const submitQuiz = async () => {
+    setLoading(true);
+    setError('');
+
     try {
-      setLoading(true);
-      setError(null);
-
+      // Validate quiz data
       if (!quizData.skin_type) {
         throw new Error('Please select your skin type');
       }
 
-      // Try to submit to backend
-      if (!quizSession.guest_mode) {
-        try {
-          const submissionData = {
-            session_id: quizSession.session_id,
-            skin_type: quizData.skin_type,
-            concerns: quizData.concerns,
-            sensitivities: quizData.sensitivities
-          };
+      console.log('📋 Submitting quiz data:', quizData);
 
-          const result = await submitQuiz(submissionData);
-          console.log('✅ Quiz submitted successfully:', result);
-          
-          // Navigate to results
-          navigate(`/recommendations/${quizSession.session_id}`);
-          return;
-          
-        } catch (submitError) {
-          console.warn('⚠️ Quiz submission failed, using direct ontology mode');
-        }
+      // Submit quiz to backend
+      const response = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(quizData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Quiz submission failed: ${response.status}`);
       }
 
-      // Fallback: Direct ontology recommendations
-      console.log('🔄 Using direct ontology mode');
-      
-      // Store quiz data in sessionStorage for results page
-      sessionStorage.setItem('quiz_results', JSON.stringify({
-        session_id: quizSession.session_id,
-        quiz_data: quizData,
-        guest_mode: true
-      }));
+      const result = await response.json();
+      console.log('✅ Quiz submitted successfully:', result);
 
-      // Navigate to products with ontology filter
-      const ontologyParams = new URLSearchParams({
+      // Redirect to products page with quiz results
+      const queryParams = new URLSearchParams({
         skin_type: quizData.skin_type,
         concerns: quizData.concerns.join(','),
         sensitivities: quizData.sensitivities.join(','),
-        ontology: 'true'
+        ontology: 'true',
+        quiz_completed: 'true'
       });
 
-      navigate(`/products?${ontologyParams.toString()}`);
+      navigate(`/products?${queryParams.toString()}`);
 
     } catch (error) {
       console.error('❌ Quiz submission error:', error);
@@ -131,27 +129,47 @@ const QuizPage = () => {
     }
   };
 
-  if (loading && !quizSession) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Initializing skin quiz...</p>
-        </div>
-      </div>
-    );
-  }
+  // Navigation functions
+  const nextStep = () => {
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  // Check if can proceed to next step
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return quizData.skin_type !== '';
+      case 2:
+        return quizData.concerns.length > 0;
+      case 3:
+        return true; // Sensitivities are optional
+      default:
+        return false;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Skin Assessment Quiz</h1>
-          <p className="text-gray-600">Get personalized ontology-based skincare recommendations</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Skin Assessment Quiz
+          </h1>
+          <p className="text-gray-600">
+            Get personalized ontology-based skincare recommendations
+          </p>
           
           {error && (
-            <div className="mt-4 p-3 bg-yellow-100 border border-yellow-400 rounded text-yellow-700 text-sm">
+            <div className="mt-4 p-3 bg-red-100 border border-red-400 rounded text-red-700 text-sm">
               {error}
             </div>
           )}
@@ -167,139 +185,285 @@ const QuizPage = () => {
             <div 
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${(currentStep / 3) * 100}%` }}
-            ></div>
+            />
           </div>
         </div>
 
-        {/* Step 1: Skin Type */}
-        {currentStep === 1 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">What's your skin type?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { id: 'normal', label: 'Normal', desc: 'Balanced, neither too oily nor too dry' },
-                { id: 'dry', label: 'Dry', desc: 'Often feels tight, may have flaky patches' },
-                { id: 'oily', label: 'Oily', desc: 'Shiny, especially in T-zone, prone to breakouts' },
-                { id: 'combination', label: 'Combination', desc: 'Oily T-zone, normal/dry cheeks' }
-              ].map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => handleSkinTypeSelect(type.id)}
-                  className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    quizData.skin_type === type.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="font-medium">{type.label}</div>
-                  <div className="text-sm text-gray-600">{type.desc}</div>
-                </button>
-              ))}
+        {/* Quiz Content */}
+        <div className="bg-white rounded-lg shadow-md p-6">
+          
+          {/* Step 1: Skin Type Assessment */}
+          {currentStep === 1 && !showSkinTypeAssessment && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">What's your skin type?</h2>
+              <div className="space-y-3">
+                {skinTypes.map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => handleSkinTypeSelect(type.id)}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
+                      quizData.skin_type === type.id
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-300 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="font-semibold">{type.label}</div>
+                    <div className="text-sm text-gray-600">{type.desc}</div>
+                  </button>
+                ))}
+              </div>
+              
+              {quizData.skin_type && quizData.skin_type !== 'unsure' && (
+                <div className="mt-6 p-4 bg-green-50 rounded-lg">
+                  <p className="text-green-800">
+                    ✅ Selected skin type: <strong className="capitalize">{quizData.skin_type}</strong>
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Step 2: Skin Concerns */}
-        {currentStep === 2 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">What are your skin concerns? (Select all that apply)</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {[
-                'acne', 'wrinkles', 'dark_spots', 'dryness', 'sensitivity', 
-                'pores', 'oiliness', 'redness', 'dullness', 'texture'
-              ].map((concern) => (
-                <button
-                  key={concern}
-                  onClick={() => handleConcernsSelect(concern)}
-                  className={`p-3 rounded-lg border-2 text-sm transition-all ${
-                    quizData.concerns.includes(concern)
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  {concern.replace('_', ' ').toUpperCase()}
-                </button>
-              ))}
+          {/* Skin Type Assessment Component */}
+          {showSkinTypeAssessment && (
+            <SkinTypeAssessment onComplete={handleAssessmentComplete} />
+          )}
+
+          {/* Step 2: Skin Concerns */}
+          {currentStep === 2 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">What are your skin concerns?</h2>
+              <p className="text-gray-600 mb-4">Select all that apply (at least one)</p>
+              
+              <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-blue-800">
+                  Your skin type: <strong className="capitalize">{quizData.skin_type}</strong>
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {concerns.map((concern) => (
+                  <button
+                    key={concern}
+                    onClick={() => handleConcernToggle(concern)}
+                    className={`p-3 border-2 rounded-lg transition-colors text-sm ${
+                      quizData.concerns.includes(concern)
+                        ? 'border-blue-600 bg-blue-50 text-blue-800'
+                        : 'border-gray-300 hover:border-blue-300'
+                    }`}
+                  >
+                    {concern}
+                  </button>
+                ))}
+              </div>
+              
+              {quizData.concerns.length > 0 && (
+                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                  <p className="text-green-800 text-sm">
+                    ✅ Selected concerns: {quizData.concerns.join(', ')}
+                  </p>
+                </div>
+              )}
             </div>
-            
-            <div className="flex justify-between mt-6">
+          )}
+
+          {/* Step 3: Sensitivities */}
+          {currentStep === 3 && (
+            <div>
+              <h2 className="text-xl font-semibold mb-4">Do you have any known sensitivities?</h2>
+              <p className="text-gray-600 mb-4">This helps us avoid ingredients that might irritate your skin</p>
+              
+              <div className="space-y-3">
+                {sensitivities.map((sensitivity) => (
+                  <button
+                    key={sensitivity.id}
+                    onClick={() => handleSensitivityToggle(sensitivity.id)}
+                    className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
+                      (sensitivity.id === 'none' && quizData.sensitivities.length === 0) ||
+                      (sensitivity.id !== 'none' && quizData.sensitivities.includes(sensitivity.id))
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-300 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="font-semibold">{sensitivity.label}</div>
+                    <div className="text-sm text-gray-600">{sensitivity.desc}</div>
+                  </button>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                <p className="text-green-800 text-sm">
+                  {quizData.sensitivities.length === 0 
+                    ? '✅ No known sensitivities - you can use most ingredients'
+                    : `✅ Avoiding: ${quizData.sensitivities.join(', ')}`
+                  }
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation */}
+          <div className="flex justify-between mt-8">
+            <button
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              ← Back
+            </button>
+
+            {currentStep < 3 ? (
               <button
-                onClick={() => setCurrentStep(1)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={() => setCurrentStep(3)}
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                onClick={nextStep}
+                disabled={!canProceed()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next →
               </button>
-            </div>
+            ) : (
+              <button
+                onClick={submitQuiz}
+                disabled={loading || !canProceed()}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Getting Recommendations...' : 'Get My Recommendations ✨'}
+              </button>
+            )}
           </div>
-        )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        {/* Step 3: Sensitivities */}
-        {currentStep === 3 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Do you have any known sensitivities?</h2>
-            <div className="space-y-3">
-              {[
-                { id: 'fragrance', label: 'Fragrance', desc: 'Perfumes and essential oils' },
-                { id: 'alcohol', label: 'Alcohol', desc: 'Denatured alcohol in products' },
-                { id: 'silicone', label: 'Silicone', desc: 'Dimethicone and similar compounds' }
-              ].map((sensitivity) => (
-                <button
-                  key={sensitivity.id}
-                  onClick={() => handleSensitivitiesSelect(sensitivity.id)}
-                  className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                    quizData.sensitivities.includes(sensitivity.id)
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                >
-                  <div className="font-medium">{sensitivity.label}</div>
-                  <div className="text-sm text-gray-600">{sensitivity.desc}</div>
-                </button>
-              ))}
-              
-              <button
-                onClick={() => handleSensitivitiesSelect('none')}
-                className={`w-full p-4 rounded-lg border-2 text-left transition-all ${
-                  quizData.sensitivities.includes('none')
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-green-300'
-                }`}
-              >
-                <div className="font-medium">No known sensitivities</div>
-                <div className="text-sm text-gray-600">I can use most ingredients safely</div>
-              </button>
-            </div>
-            
-            <div className="flex justify-between mt-6">
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={handleSubmitQuiz}
-                disabled={loading}
-                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
-              >
-                {loading ? 'Processing...' : 'Get My Recommendations 🧠'}
-              </button>
-            </div>
-          </div>
-        )}
+// Skin Type Assessment Component
+const SkinTypeAssessment = ({ onComplete }) => {
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState([]);
 
-        {/* Session Info */}
-        {quizSession && (
-          <div className="mt-6 text-center text-sm text-gray-500">
-            Session: {quizSession.session_id}
-            {quizSession.guest_mode && <span className="text-yellow-600"> (Guest Mode)</span>}
+  const questions = [
+    {
+      question: "How does your skin feel when you wake up in the morning?",
+      options: [
+        { text: "Tight, dry, maybe flaky", value: "dry" },
+        { text: "Normal, comfortable, balanced", value: "normal" },
+        { text: "Oily or shiny, especially on forehead, nose, and chin", value: "oily" },
+        { text: "Dry or normal on cheeks, oily in T-zone", value: "combination" }
+      ]
+    },
+    {
+      question: "How does your skin feel a few hours after washing your face?",
+      options: [
+        { text: "Tight or rough, sometimes flaky", value: "dry" },
+        { text: "Balanced, neither oily nor dry", value: "normal" },
+        { text: "Oily and shiny, especially in the T-zone", value: "oily" },
+        { text: "Oily in T-zone, dry or normal on other areas", value: "combination" }
+      ]
+    },
+    {
+      question: "How often do you get oily shine during the day?",
+      options: [
+        { text: "Rarely, skin feels dry", value: "dry" },
+        { text: "Rarely, skin looks balanced", value: "normal" },
+        { text: "Often, skin looks shiny or greasy", value: "oily" },
+        { text: "Only in some areas, mostly T-zone", value: "combination" }
+      ]
+    },
+    {
+      question: "Do you experience flaky or rough patches?",
+      options: [
+        { text: "Yes, frequently", value: "dry" },
+        { text: "Rarely", value: "normal" },
+        { text: "Almost never", value: "oily" },
+        { text: "Sometimes on cheeks only", value: "combination" }
+      ]
+    }
+  ];
+
+  const handleAnswer = (value) => {
+    const newAnswers = [...answers, value];
+    setAnswers(newAnswers);
+
+    if (currentQuestion < questions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      // Calculate skin type based on answers
+      const skinType = determineSkinType(newAnswers);
+      onComplete(skinType);
+    }
+  };
+
+  const determineSkinType = (answers) => {
+    const counts = {};
+    answers.forEach(answer => {
+      counts[answer] = (counts[answer] || 0) + 1;
+    });
+
+    // Find the most common answer
+    const skinType = Object.keys(counts).reduce((a, b) => 
+      counts[a] > counts[b] ? a : b
+    );
+
+    return skinType;
+  };
+
+  const goBack = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+      setAnswers(answers.slice(0, -1));
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <button
+          onClick={() => window.location.reload()} // Reset to skin type selection
+          className="flex items-center text-blue-600 hover:text-blue-800 mb-4"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to skin type selection
+        </button>
+        
+        <div className="mb-4">
+          <div className="flex justify-between text-sm text-gray-500 mb-2">
+            <span>Question {currentQuestion + 1} of {questions.length}</span>
+            <span>{Math.round(((currentQuestion + 1) / questions.length) * 100)}%</span>
           </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-green-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 p-6 rounded-lg">
+        <h3 className="text-lg font-semibold mb-4">
+          {questions[currentQuestion].question}
+        </h3>
+        
+        <div className="space-y-3">
+          {questions[currentQuestion].options.map((option, index) => (
+            <button
+              key={index}
+              onClick={() => handleAnswer(option.value)}
+              className="w-full p-4 text-left border-2 border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors"
+            >
+              {option.text}
+            </button>
+          ))}
+        </div>
+
+        {currentQuestion > 0 && (
+          <button
+            onClick={goBack}
+            className="mt-4 px-4 py-2 text-gray-600 hover:text-gray-800"
+          >
+            ← Previous Question
+          </button>
         )}
       </div>
     </div>

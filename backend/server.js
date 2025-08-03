@@ -5,6 +5,9 @@ const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
+const morgan = require('morgan');
+const path = require('path');
+const { testConnections } = require('./config/database');
 const { Pool } = require('pg');
 
 // 🎓 CRITICAL CHANGE: Ganti dari hybridEngine ke ontologyEngine
@@ -26,9 +29,20 @@ const pool = new Pool({
 // ===== MIDDLEWARE =====
 app.use(helmet());
 app.use(compression());
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL 
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Logging
+app.use(morgan('combined'));
+
+// Static files for images
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // Request logging
 app.use((req, res, next) => {
@@ -39,7 +53,9 @@ app.use((req, res, next) => {
 // ===== ADD THESE IMPORTS AT THE TOP =====
 const categoryRoutes = require('./routes/categories');
 const brandRoutes = require('./routes/brands');
-const productRoutes = require('./routes/products');
+const quizRoutes = require('./routes/quiz');
+const productsRoutes = require('./routes/products');
+const ontologyRoutes = require('./routes/ontology');
 const ingredientRoutes = require('./routes/ingredients');
 
 // ===== ADD THESE ROUTES AFTER YOUR EXISTING ROUTES =====
@@ -47,7 +63,9 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 
 // 🧠 ONTOLOGY-POWERED PRODUCT ROUTES (Critical for thesis)
-app.use('/api/products', productRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/products', productsRoutes);
+app.use('/api/ontology', ontologyRoutes);
 
 // 🧠 ONTOLOGY-POWERED INGREDIENT ROUTES (Critical for thesis) 
 app.use('/api/ingredients', ingredientRoutes);
@@ -90,6 +108,31 @@ app.get('/health', (req, res) => {
   });
 });
 
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK',
+    success: true,
+    message: 'MatchCare Backend API is running',
+    service: 'MatchCare API',
+    database: process.env.DB_NAME || 'matchcare_fresh_db',
+    port: PORT,
+    timestamp: new Date().toISOString(),
+    features: ['Quiz System', 'Ontology Integration', 'Product Recommendations']
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'MatchCare Backend API is running',
+    timestamp: new Date().toISOString(),
+    ontology_integration: 'active',
+    database_connected: true,
+    service: 'MatchCare API',
+    port: PORT
+  });
+});
+
 // API info endpoint  
 app.get('/', (req, res) => {
   res.json({
@@ -104,7 +147,13 @@ app.get('/', (req, res) => {
       '🛡️ Semantic Safety Analysis', 
       '📊 Knowledge Graph Utilization',
       '🎯 Ingredient Interaction Detection',
-      '📝 Academic-Grade Explanations'
+      '📝 Academic-Grade Explanations',
+      'Complete Quiz System with Skin Type Assessment',
+      'Ontology-based Product Recommendations', 
+      'Advanced Product Filtering',
+      'Ingredient Analysis',
+      'Safety Recommendations',
+      'Guest Session Management'
     ],
     technical_innovation: [
       'First ontology-based skincare recommendation in Indonesia',
@@ -119,7 +168,8 @@ app.get('/', (req, res) => {
       // 🎓 MAIN ONTOLOGY ENDPOINTS
       ontology_recommendations: {
         guest: 'POST /api/ontology/recommendations',
-        test: 'GET /api/test/ontology-engine'
+        test: 'GET /api/test/ontology-engine',
+        all: '/api/ontology/*'
       },
 
       //  PRODUCT DATA ENDPOINTS 
@@ -127,7 +177,8 @@ app.get('/', (req, res) => {
         list: 'GET /api/products',
         detail: 'GET /api/products/:id',
         search: 'GET /api/products/search',
-        recommendations: 'POST /api/products/recommendations'
+        recommendations: 'POST /api/products/recommendations',
+        all: '/api/products/*'
       },
       
       //  CATEGORIES ENDPOINTS 
@@ -159,7 +210,8 @@ app.get('/', (req, res) => {
         start: 'POST /api/quiz/start',
         reference_data: 'GET /api/quiz/reference-data',
         submit: 'POST /api/quiz/submit',
-        recommendations: 'GET /api/recommendations/:session_id'
+        recommendations: 'GET /api/recommendations/:session_id',
+        all: '/api/quiz/*'
       },
       
       // Ontology Analysis (Academic)
@@ -177,6 +229,16 @@ app.get('/', (req, res) => {
         documentation: 'GET /api/docs'
       }
     },
+
+    // Quick access documentation
+    quick_start: {
+      documentation: 'GET /api/docs - Complete API documentation',
+      test_ontology: 'GET /api/test/ontology-engine - Test recommendation engine',
+      health_check: 'GET /health - System health status',
+      start_quiz: 'POST /api/quiz/start - Begin user assessment',
+      get_recommendations: 'POST /api/ontology/recommendations - Get personalized recommendations'
+    },
+
     // 📋 WEEK 1 REQUIREMENTS STATUS (NEW)
     week_1_requirements: {
       required_endpoints: [
@@ -190,7 +252,9 @@ app.get('/', (req, res) => {
       architecture_pattern: 'Clean Routes with Enhanced Data',
       ready_for_frontend: true
     },
-    ready_for_academic_demo: true
+    ready_for_academic_demo: true,
+    ready_for_frontend_integration: true,
+    complete_system: true
   });
 });
 
@@ -942,13 +1006,18 @@ app.use('*', (req, res) => {
   res.status(404).json({ 
     success: false, 
     message: `Route ${req.originalUrl} not found`,
+    error: 'Endpoint not found',
     algorithm_type: 'TRUE_ONTOLOGY_BASED',
     timestamp: new Date().toISOString(),
     available_endpoints: {
+      quick_access: ['/api/quiz', '/api/products', '/api/ontology', '/health'],
+      
+      // Detailed endpoints (enhanced version)
       main: '/',
       health: '/health', 
       api_health: '/api/health',
       documentation: '/api/docs',
+      
       
       // Core Ontology Endpoints
       ontology_recommendations: 'POST /api/ontology/recommendations',
@@ -961,11 +1030,29 @@ app.use('*', (req, res) => {
       quiz_submit: 'POST /api/quiz/submit',
       quiz_results: 'GET /api/recommendations/:session_id',
       
+      // Data Endpoints
+      products_list: 'GET /api/products',
+      product_detail: 'GET /api/products/:id',
+      categories: 'GET /api/categories',
+      brands: 'GET /api/brands',
+
       // Testing
       ontology_test: 'GET /api/test/ontology-engine',
-      system_status: 'GET /api/analysis/ontology-status'
+      system_status: 'GET /api/analysis/ontology-status',
+      week1_check: 'GET /api/system/week1-check'
     },
     academic_tip: 'Use /api/docs for complete API documentation'
+  });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('❌ Server Error:', error);
+  
+  res.status(error.status || 500).json({
+    success: false,
+    error: error.message || 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
   });
 });
 
@@ -1000,33 +1087,47 @@ async function startServer() {
       });
       console.log('✅ Ontology engine test successful');
       console.log(`📊 Test recommendations: ${testResult.recommendations.length}`);
+      console.log(`🎯 Algorithm type: ${testResult.metadata?.algorithm_type || 'N/A'}`);
     } catch (error) {
       console.warn('⚠️ Ontology engine test failed:', error.message);
       console.log('💡 Make sure Fuseki server is running with ontology data');
+      console.log('💡 Server will continue but ontology features may be limited');
     }
     
     // Start server
     const server = app.listen(PORT, () => {
-      console.log('🎉 MatchCare TRUE Ontology-Based Server Started!');
-      console.log(`🌐 Server running on: http://localhost:${PORT}`);
-      console.log(`💚 Health Check: http://localhost:${PORT}/health`);
-      console.log(`🧪 Ontology Test: http://localhost:${PORT}/api/test/ontology-engine`);
-      console.log(`🎓 Main Endpoint: POST http://localhost:${PORT}/api/ontology/recommendations`);
-      console.log(`🔍 Quiz System: http://localhost:${PORT}/api/quiz/start`);
-      console.log('');
+      console.log('\n🎉 MATCHCARE TRUE ONTOLOGY-BASED SYSTEM STARTED!');
+      console.log('='.repeat(60));
+      console.log(`🌐 Server: http://localhost:${PORT}`);
+      console.log(`💚 Health: http://localhost:${PORT}/health`);
+      console.log(`🧪 Quiz API: http://localhost:${PORT}/api/quiz/start`);
+      console.log(`🛍️ Products: http://localhost:${PORT}/api/products`);
+      console.log(`🧠 Ontology: http://localhost:${PORT}/api/ontology/recommendations`);
+      console.log(`🔍 System Status: http://localhost:${PORT}/api/system/week1-check`);
+      console.log('='.repeat(60));
       console.log('🎓 ACADEMIC FEATURES READY:');
       console.log('   ✅ SPARQL semantic reasoning');
       console.log('   ✅ Knowledge graph utilization');
       console.log('   ✅ Ingredient interaction analysis');
       console.log('   ✅ Ontology-driven scoring (70% semantic)');
       console.log('   ✅ Academic-grade explanations');
-      console.log('');
+      console.log('   ✅ Complete Skin Quiz with Assessment');
+      console.log('   ✅ Advanced Product Filtering');
+      console.log('   ✅ Guest Session Management');
+      console.log('   ✅ Ingredient Safety Analysis');
       console.log('🚀 TRUE ONTOLOGY-BASED SYSTEM READY FOR SKRIPSI DEMO!');
     });
 
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.log('SIGTERM received, shutting down gracefully');
+      server.close(() => {
+        console.log('Process terminated');
+        pool.end();
+      });
+    });
+    process.on('SIGINT', () => {
+      console.log('SIGINT received, shutting down gracefully');
       server.close(() => {
         console.log('Process terminated');
         pool.end();

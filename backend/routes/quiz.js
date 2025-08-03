@@ -1,231 +1,401 @@
+// backend/routes/quiz.js
+// COMPLETE QUIZ BACKEND ROUTES
 
 const express = require('express');
+const { pool } = require('../config/database');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
-const { Pool } = require('pg');
 
-const pool = new Pool({
-    user: process.env.DB_USER || 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    database: process.env.DB_NAME || 'matchcare_fresh_db',
-    password: process.env.DB_PASSWORD || '90226628',
-    port: process.env.DB_PORT || 5432,
-});
+// Session storage for guest users (in memory for now)
+const guestSessions = new Map();
 
-// GET /api/quiz/reference-data
-router.get('/reference-data', async (req, res) => {
-    try {
-        // Fetch skin types
-        const skinTypesQuery = 'SELECT id, name, ontology_uri FROM skin_types ORDER BY name';
-        const skinTypesResult = await pool.query(skinTypesQuery);
-
-        // Fetch skin concerns
-        const skinConcernsQuery = 'SELECT id, name, ontology_uri FROM skin_concerns ORDER BY name';
-        const skinConcernsResult = await pool.query(skinConcernsQuery);
-
-        // Fetch allergen types (sensitivities)
-        const allergenTypesQuery = 'SELECT id, name, ontology_uri, common_sources as description FROM allergen_types ORDER BY name';
-        const allergenTypesResult = await pool.query(allergenTypesQuery);
-
-        const referenceData = {
-            skin_types: skinTypesResult.rows,
-            skin_concerns: skinConcernsResult.rows,
-            allergen_types: allergenTypesResult.rows
-        };
-
-        res.json(referenceData);
-    } catch (error) {
-        console.error('Error fetching reference data:', error);
-        res.status(500).json({ 
-            error: 'Failed to fetch reference data',
-            details: error.message 
-        });
+// Clean up old sessions periodically (24 hours)
+setInterval(() => {
+  const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+  for (const [sessionId, session] of guestSessions.entries()) {
+    if (session.created_at < twentyFourHoursAgo) {
+      guestSessions.delete(sessionId);
     }
-});
+  }
+}, 60 * 60 * 1000); // Run every hour
 
-// POST /api/quiz/submit
-router.post('/submit', async (req, res) => {
-    const client = await pool.connect();
+// Start quiz session
+router.post('/start', async (req, res) => {
+  try {
+    const sessionId = uuidv4();
+    const session = {
+      id: sessionId,
+      created_at: Date.now(),
+      status: 'started',
+      step: 1,
+      data: {}
+    };
     
-    try {
-        await client.query('BEGIN');
-        
-        const { skin_type, skin_concerns, sensitivities, session_id } = req.body;
-        
-        // Generate session ID if not provided
-        const finalSessionId = session_id || `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Get skin type ID
-        const skinTypeQuery = 'SELECT id FROM skin_types WHERE name = $1';
-        const skinTypeResult = await client.query(skinTypeQuery, [skin_type]);
-        
-        if (skinTypeResult.rows.length === 0) {
-            throw new Error(`Invalid skin type: ${skin_type}`);
-        }
-        
-        const skinTypeId = skinTypeResult.rows[0].id;
-        
-        // Create or update user profile
-        const profileQuery = `
-            INSERT INTO user_profiles (session_id, skin_type_id, created_at, updated_at)
-            VALUES ($1, $2, NOW(), NOW())
-            ON CONFLICT (session_id) 
-            DO UPDATE SET 
-                skin_type_id = $2,
-                updated_at = NOW()
-            RETURNING id
-        `;
-        
-        const profileResult = await client.query(profileQuery, [finalSessionId, skinTypeId]);
-        const profileId = profileResult.rows[0].id;
-        
-        // Clear existing concerns and sensitivities
-        await client.query('DELETE FROM user_skin_concerns WHERE user_profile_id = $1', [profileId]);
-        await client.query('DELETE FROM user_sensitivities WHERE user_profile_id = $1', [profileId]);
-        
-        // Insert skin concerns
-        if (skin_concerns && skin_concerns.length > 0) {
-            for (const concern of skin_concerns) {
-                const concernQuery = 'SELECT id FROM skin_concerns WHERE name = $1';
-                const concernResult = await client.query(concernQuery, [concern]);
-                
-                if (concernResult.rows.length > 0) {
-                    const concernId = concernResult.rows[0].id;
-                    await client.query(
-                        'INSERT INTO user_skin_concerns (user_profile_id, skin_concern_id) VALUES ($1, $2)',
-                        [profileId, concernId]
-                    );
-                }
-            }
-        }
-        
-        // Insert sensitivities
-        if (sensitivities && sensitivities.length > 0) {
-            for (const sensitivity of sensitivities) {
-                const sensitivityQuery = 'SELECT id FROM allergen_types WHERE name = $1';
-                const sensitivityResult = await client.query(sensitivityQuery, [sensitivity]);
-                
-                if (sensitivityResult.rows.length > 0) {
-                    const sensitivityId = sensitivityResult.rows[0].id;
-                    await client.query(
-                        'INSERT INTO user_sensitivities (user_profile_id, allergen_type_id) VALUES ($1, $2)',
-                        [profileId, sensitivityId]
-                    );
-                }
-            }
-        }
-        
-        await client.query('COMMIT');
-        
-        // Return success response
-        res.json({
-            success: true,
-            quiz_id: profileId,
-            session_id: finalSessionId,
-            message: 'Quiz submitted successfully',
-            recommendations: [] // Will be populated by recommendation engine later
-        });
-        
-    } catch (error) {
-        await client.query('ROLLBACK');
-        console.error('Error submitting quiz:', error);
-        res.status(500).json({ 
-            error: 'Failed to submit quiz',
-            details: error.message 
-        });
-    } finally {
-        client.release();
-    }
+    guestSessions.set(sessionId, session);
+    
+    console.log('🚀 Starting quiz session:', sessionId);
+    
+    res.json({
+      success: true,
+      session_id: sessionId,
+      message: 'Quiz session started',
+      current_step: 1,
+      total_steps: 3
+    });
+    
+  } catch (error) {
+    console.error('❌ Quiz start error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to start quiz session'
+    });
+  }
 });
 
-// GET /api/quiz/recommendations/:sessionId
-router.get('/recommendations/:sessionId', async (req, res) => {
-    try {
-        const { sessionId } = req.params;
-        
-        // Get user profile
-        const profileQuery = `
-            SELECT 
-                up.id,
-                up.session_id,
-                st.name as skin_type,
-                array_agg(DISTINCT sc.name) FILTER (WHERE sc.name IS NOT NULL) as skin_concerns,
-                array_agg(DISTINCT at.name) FILTER (WHERE at.name IS NOT NULL) as sensitivities
-            FROM user_profiles up
-            LEFT JOIN skin_types st ON up.skin_type_id = st.id
-            LEFT JOIN user_skin_concerns usc ON up.id = usc.user_profile_id
-            LEFT JOIN skin_concerns sc ON usc.skin_concern_id = sc.id
-            LEFT JOIN user_sensitivities us ON up.id = us.user_profile_id
-            LEFT JOIN allergen_types at ON us.allergen_type_id = at.id
-            WHERE up.session_id = $1
-            GROUP BY up.id, up.session_id, st.name
-        `;
-        
-        const profileResult = await pool.query(profileQuery, [sessionId]);
-        
-        if (profileResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Quiz profile not found' });
-        }
-        
-        const profile = profileResult.rows[0];
-        
-        // Simple recommendation logic - get products that match skin type
-        let recommendationQuery = `
-            SELECT DISTINCT
-                p.id,
-                p.name,
-                p.brand,
-                p.main_category,
-                p.subcategory,
-                p.description,
-                p.price,
-                p.image_url,
-                p.fragrance_free,
-                p.alcohol_free,
-                p.paraben_free,
-                0.8 as match_score
-            FROM products p
-            WHERE p.is_active = true
-        `;
-        
-        const queryParams = [];
-        let paramCount = 0;
-        
-        // Filter by sensitivities
-        if (profile.sensitivities && profile.sensitivities.length > 0) {
-            const sensitivityFilters = [];
-            
-            if (profile.sensitivities.includes('fragrance')) {
-                sensitivityFilters.push('p.fragrance_free = true');
-            }
-            if (profile.sensitivities.includes('alcohol')) {
-                sensitivityFilters.push('p.alcohol_free = true');
-            }
-            if (profile.sensitivities.includes('paraben')) {
-                sensitivityFilters.push('p.paraben_free = true');
-            }
-            
-            if (sensitivityFilters.length > 0) {
-                recommendationQuery += ' AND (' + sensitivityFilters.join(' AND ') + ')';
-            }
-        }
-        
-        recommendationQuery += ' ORDER BY p.name LIMIT 20';
-        
-        const recommendationsResult = await pool.query(recommendationQuery, queryParams);
-        
-        res.json({
-            profile: profile,
-            recommendations: recommendationsResult.rows,
-            total_recommendations: recommendationsResult.rows.length
-        });
-        
-    } catch (error) {
-        console.error('Error fetching recommendations:', error);
-        res.status(500).json({ 
-            error: 'Failed to fetch recommendations',
-            details: error.message 
-        });
+// Submit quiz and process results
+router.post('/submit', async (req, res) => {
+  try {
+    const { skin_type, concerns = [], sensitivities = [] } = req.body;
+    
+    console.log('📝 Quiz submit received:', {
+      skin_type,
+      concerns,
+      sensitivities
+    });
+
+    // Validate required fields
+    if (!skin_type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Skin type is required'
+      });
     }
+
+    // Validate skin type
+    const validSkinTypes = ['normal', 'dry', 'oily', 'combination'];
+    if (!validSkinTypes.includes(skin_type.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid skin type'
+      });
+    }
+
+    // Store quiz result in database (for analytics)
+    const client = await pool.connect();
+    try {
+      const insertQuery = `
+        INSERT INTO quiz_results (
+          session_id, skin_type, concerns, sensitivities, 
+          completed_at, created_at
+        ) VALUES ($1, $2, $3, $4, NOW(), NOW())
+        RETURNING id
+      `;
+      
+      const sessionId = req.body.session_id || uuidv4();
+      const result = await client.query(insertQuery, [
+        sessionId,
+        skin_type.toLowerCase(),
+        JSON.stringify(concerns),
+        JSON.stringify(sensitivities)
+      ]);
+
+      console.log('✅ Quiz result saved to database:', result.rows[0].id);
+
+    } catch (dbError) {
+      console.warn('⚠️ Database save failed, continuing:', dbError.message);
+    } finally {
+      client.release();
+    }
+
+    // Generate immediate recommendations
+    const recommendations = await generateQuizRecommendations({
+      skin_type: skin_type.toLowerCase(),
+      concerns,
+      sensitivities
+    });
+
+    res.json({
+      success: true,
+      message: 'Quiz completed successfully',
+      data: {
+        skin_type: skin_type.toLowerCase(),
+        concerns,
+        sensitivities,
+        recommendations_count: recommendations.length
+      },
+      recommendations: recommendations.slice(0, 20), // Limit initial results
+      next_steps: {
+        view_all_products: `/products?skin_type=${skin_type.toLowerCase()}&concerns=${concerns.join(',')}&ontology=true`,
+        get_more_recommendations: '/api/ontology/recommendations'
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Quiz submission error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to process quiz submission',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
+
+// Get quiz session status
+router.get('/session/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = guestSessions.get(sessionId);
+    
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      session: {
+        id: session.id,
+        status: session.status,
+        step: session.step,
+        created_at: session.created_at
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Session lookup error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get session'
+    });
+  }
+});
+
+// Generate recommendations based on quiz results
+async function generateQuizRecommendations({ skin_type, concerns, sensitivities }) {
+  const client = await pool.connect();
+  
+  try {
+    console.log('🎯 Generating recommendations for:', { skin_type, concerns, sensitivities });
+
+    // Build dynamic query based on quiz results
+    let whereConditions = [];
+    let queryParams = [];
+    let paramIndex = 1;
+
+    // Filter by skin type suitability
+    whereConditions.push(`$${paramIndex} = ANY(suitable_for_skin_types) OR suitable_for_skin_types = '{}'`);
+    queryParams.push(skin_type);
+    paramIndex++;
+
+    // Filter by concerns if specified
+    if (concerns.length > 0) {
+      const concernConditions = concerns.map(concern => {
+        const condition = `$${paramIndex} = ANY(addresses_concerns)`;
+        queryParams.push(concern.toLowerCase());
+        paramIndex++;
+        return condition;
+      });
+      whereConditions.push(`(${concernConditions.join(' OR ')})`);
+    }
+
+    // Avoid products with user sensitivities
+    if (sensitivities.length > 0) {
+      sensitivities.forEach(sensitivity => {
+        switch(sensitivity.toLowerCase()) {
+          case 'fragrance':
+            whereConditions.push('fragrance_free = true');
+            break;
+          case 'alcohol':
+            whereConditions.push('alcohol_free = true');
+            break;
+          case 'silicone':
+            whereConditions.push('silicone_free = true');
+            break;
+          case 'paraben':
+            whereConditions.push('paraben_free = true');
+            break;
+          case 'sulfate':
+            whereConditions.push('sulfate_free = true');
+            break;
+        }
+      });
+    }
+
+    const query = `
+      SELECT 
+        p.id,
+        p.name,
+        b.name as brand_name,
+        p.product_type,
+        p.description,
+        p.main_category,
+        p.subcategory,
+        p.local_image_path,
+        p.suitable_for_skin_types,
+        p.addresses_concerns,
+        p.alcohol_free,
+        p.fragrance_free,
+        p.paraben_free,
+        p.sulfate_free,
+        p.silicone_free,
+        p.key_ingredients_csv,
+        -- Calculate match score
+        CASE 
+          WHEN $1 = ANY(suitable_for_skin_types) THEN 40
+          ELSE 0
+        END +
+        CASE 
+          WHEN array_length(suitable_for_skin_types, 1) IS NULL THEN 20
+          ELSE 0
+        END as skin_type_score
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.is_active = true
+        ${whereConditions.length > 0 ? 'AND ' + whereConditions.join(' AND ') : ''}
+      ORDER BY skin_type_score DESC, p.name
+      LIMIT 50
+    `;
+
+    console.log('🔍 Executing recommendation query:', query);
+    console.log('📊 Query parameters:', queryParams);
+
+    const result = await client.query(query, queryParams);
+    
+    console.log(`✅ Found ${result.rows.length} matching products`);
+
+    // Format results with match explanations
+    const recommendations = result.rows.map(product => ({
+      id: product.id,
+      name: product.name,
+      brand: product.brand_name,
+      product_type: product.product_type,
+      description: product.description,
+      category: product.main_category,
+      subcategory: product.subcategory,
+      image: product.local_image_path || '/images/placeholder-product.jpg',
+      suitable_for: product.suitable_for_skin_types || [],
+      addresses: product.addresses_concerns || [],
+      formulation: {
+        alcohol_free: product.alcohol_free,
+        fragrance_free: product.fragrance_free,
+        paraben_free: product.paraben_free,
+        sulfate_free: product.sulfate_free,
+        silicone_free: product.silicone_free
+      },
+      key_ingredients: product.key_ingredients_csv ? 
+        product.key_ingredients_csv.split(',').map(i => i.trim()) : [],
+      match_score: calculateMatchScore(product, { skin_type, concerns, sensitivities }),
+      match_reasons: generateMatchReasons(product, { skin_type, concerns, sensitivities })
+    }));
+
+    // Sort by match score
+    recommendations.sort((a, b) => b.match_score - a.match_score);
+
+    return recommendations;
+
+  } catch (error) {
+    console.error('❌ Recommendation generation error:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Calculate match score based on quiz data
+function calculateMatchScore(product, quizData) {
+  let score = 0;
+  
+  // Skin type match (40 points)
+  if (product.suitable_for_skin_types && 
+      product.suitable_for_skin_types.includes(quizData.skin_type)) {
+    score += 40;
+  } else if (!product.suitable_for_skin_types || 
+             product.suitable_for_skin_types.length === 0) {
+    score += 20; // Universal product
+  }
+
+  // Concern addressing (30 points max)
+  if (product.addresses_concerns && quizData.concerns.length > 0) {
+    const matchingConcerns = quizData.concerns.filter(concern =>
+      product.addresses_concerns.includes(concern.toLowerCase())
+    );
+    score += Math.min(matchingConcerns.length * 10, 30);
+  }
+
+  // Sensitivity avoidance (20 points max)
+  if (quizData.sensitivities.length > 0) {
+    let sensitivityScore = 0;
+    quizData.sensitivities.forEach(sensitivity => {
+      switch(sensitivity.toLowerCase()) {
+        case 'fragrance':
+          if (product.fragrance_free) sensitivityScore += 5;
+          break;
+        case 'alcohol':
+          if (product.alcohol_free) sensitivityScore += 5;
+          break;
+        case 'silicone':
+          if (product.silicone_free) sensitivityScore += 5;
+          break;
+        case 'paraben':
+          if (product.paraben_free) sensitivityScore += 5;
+          break;
+        case 'sulfate':
+          if (product.sulfate_free) sensitivityScore += 5;
+          break;
+      }
+    });
+    score += Math.min(sensitivityScore, 20);
+  } else {
+    score += 10; // Bonus for no sensitivities
+  }
+
+  return score;
+}
+
+// Generate human-readable match reasons
+function generateMatchReasons(product, quizData) {
+  const reasons = [];
+  
+  // Skin type reasons
+  if (product.suitable_for_skin_types && 
+      product.suitable_for_skin_types.includes(quizData.skin_type)) {
+    reasons.push(`Perfect for ${quizData.skin_type} skin`);
+  }
+
+  // Concern reasons
+  if (product.addresses_concerns && quizData.concerns.length > 0) {
+    const matchingConcerns = quizData.concerns.filter(concern =>
+      product.addresses_concerns.includes(concern.toLowerCase())
+    );
+    if (matchingConcerns.length > 0) {
+      reasons.push(`Addresses your concerns: ${matchingConcerns.join(', ')}`);
+    }
+  }
+
+  // Sensitivity reasons
+  if (quizData.sensitivities.length > 0) {
+    const safetyFeatures = [];
+    quizData.sensitivities.forEach(sensitivity => {
+      switch(sensitivity.toLowerCase()) {
+        case 'fragrance':
+          if (product.fragrance_free) safetyFeatures.push('fragrance-free');
+          break;
+        case 'alcohol':
+          if (product.alcohol_free) safetyFeatures.push('alcohol-free');
+          break;
+        case 'silicone':
+          if (product.silicone_free) safetyFeatures.push('silicone-free');
+          break;
+      }
+    });
+    if (safetyFeatures.length > 0) {
+      reasons.push(`Safe for you: ${safetyFeatures.join(', ')}`);
+    }
+  }
+
+  return reasons.length > 0 ? reasons : ['Good general match for your profile'];
+}
 
 module.exports = router;
