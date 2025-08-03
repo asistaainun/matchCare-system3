@@ -20,9 +20,23 @@ const ProductCard = ({
   const ontologyScore = product.final_ontology_score;
 
   // Fallback image
-  const productImage = imageError || !product.local_image_path 
-    ? '/images/placeholder-product.jpg' 
-    : `http://localhost:5000/${product.local_image_path}`;
+  const getImageUrl = () => {
+  if (imageError) return '/images/placeholder-product.jpg';
+  
+  if (product.image_urls && product.image_urls !== '') {
+    // Remove hardcoded localhost:5000, use relative path
+    return product.image_urls.startsWith('http') 
+      ? product.image_urls 
+      : `/images/${product.image_urls}`;
+  }
+  
+  if (product.image_urls && product.image_urls !== '') {
+    const images = product.image_urls.split(',').map(url => url.trim());
+    return images[0] || '/images/placeholder-product.jpg';
+  }
+  
+  return '/images/placeholder-product.jpg';
+};
 
   const handleImageError = () => {
     setImageError(true);
@@ -66,7 +80,7 @@ const ProductCard = ({
       {/* Image Section */}
       <div className="relative">
         <img
-          src={productImage}
+          src={getImageUrl()}
           alt={product.name}
           onError={handleImageError}
           className="w-full h-48 object-cover"

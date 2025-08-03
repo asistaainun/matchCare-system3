@@ -33,6 +33,15 @@ api.interceptors.response.use(
   }
 );
 
+export const checkProductCompatibility = async (productId, userProfile) => {
+  try {
+    const response = await api.post(`/api/products/${productId}/compatibility-check`, userProfile);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Failed to check compatibility: ${error.message}`);
+  }
+};
+
 // ================== CORE API FUNCTIONS ==================
 
 // 🏥 Health Check

@@ -110,6 +110,139 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ===== 6. INGREDIENT SEARCH (Ontology-enhanced) =====
+
+router.get('/search', async (req, res) => {
+  try {
+    const { q, limit = 20 } = req.query;
+    
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query must be at least 2 characters'
+      });
+    }
+
+    const client = await pool.connect();
+    
+    try {
+      // ✅ QUERY YANG SESUAI DENGAN SCHEMA DATABASE
+      const dbQuery = `
+        SELECT 
+          i.id,
+          i.name,
+          i.description,
+          i.what_it_does,
+          i.explanation,
+          i.benefit,
+          i.safety,
+          i.actual_functions,
+          i.functional_categories,
+          i.is_key_ingredient,
+          i.pregnancy_safe,
+          i.alcohol_free,
+          i.fragrance_free,
+          i.silicone_free,
+          i.sulfate_free,
+          i.paraben_free,
+          i.suitable_for_skin_types,
+          i.addresses_concerns,
+          i.provided_benefits,
+          i.sensitivities,
+          'database' as source
+        FROM ingredients i
+        WHERE 
+          i.is_active = true
+          AND (
+            LOWER(i.name) LIKE LOWER($1) 
+            OR LOWER(i.description) LIKE LOWER($1)
+            OR LOWER(i.what_it_does) LIKE LOWER($1)
+            OR LOWER(i.explanation) LIKE LOWER($1)
+            OR LOWER(i.benefit) LIKE LOWER($1)
+            OR LOWER(i.alternative_names) LIKE LOWER($1)
+          )
+        ORDER BY 
+          CASE WHEN LOWER(i.name) LIKE LOWER($2) THEN 1 ELSE 2 END,
+          LENGTH(i.name),
+          i.name
+        LIMIT $3
+      `;
+      
+      const searchTerm = `%${q.trim()}%`;
+      const exactTerm = `${q.trim()}%`;
+      
+      const result = await client.query(dbQuery, [searchTerm, exactTerm, limit]);
+      
+      // Format hasil sesuai dengan struktur yang diharapkan
+      const formattedResults = result.rows.map(ingredient => ({
+        id: ingredient.id,
+        name: ingredient.name,
+        description: ingredient.description || ingredient.what_it_does,
+        benefits: ingredient.benefit || ingredient.provided_benefits,
+        functions: ingredient.actual_functions,
+        safety_info: {
+          pregnancy_safe: ingredient.pregnancy_safe,
+          alcohol_free: ingredient.alcohol_free,
+          fragrance_free: ingredient.fragrance_free,
+          silicone_free: ingredient.silicone_free,
+          sulfate_free: ingredient.sulfate_free,
+          paraben_free: ingredient.paraben_free,
+          safety_notes: ingredient.safety
+        },
+        skin_compatibility: {
+          suitable_for: ingredient.suitable_for_skin_types,
+          addresses_concerns: ingredient.addresses_concerns,
+          sensitivities: ingredient.sensitivities
+        },
+        is_key_ingredient: ingredient.is_key_ingredient,
+        source: ingredient.source
+      }));
+      
+      // Try ontology search if database results are limited
+      let ontologyResults = [];
+      if (result.rows.length < 5) {
+        try {
+          const ontologyData = await ontologyService.searchIngredients(q, limit - result.rows.length);
+          ontologyResults = ontologyData.data || [];
+        } catch (ontologyError) {
+          console.warn('Ontology search failed:', ontologyError.message);
+        }
+      }
+      
+      const combinedResults = [
+        ...formattedResults,
+        ...ontologyResults.map(item => ({
+          ...item,
+          source: 'ontology'
+        }))
+      ];
+      
+      res.json({
+        success: true,
+        query: q,
+        total: combinedResults.length,
+        ingredients: combinedResults,
+        sources: {
+          database: formattedResults.length,
+          ontology: ontologyResults.length
+        },
+        algorithm_type: 'HYBRID_INGREDIENT_SEARCH'
+      });
+      
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('❌ Ingredient search error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Search failed',
+      message: error.message
+    });
+  }
+});
+
 // ===== 2. GET INGREDIENT DETAIL (Ontology-powered) =====
 router.get('/:ingredientName', async (req, res) => {
   try {
@@ -382,75 +515,6 @@ router.post('/conflicts', async (req, res) => {
   }
 });
 
-// ===== 6. INGREDIENT SEARCH (Ontology-enhanced) =====
-router.get('/search', async (req, res) => {
-  try {
-    const { q, limit = 20 } = req.query;
-
-    if (!q || q.trim().length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: 'Search query must be at least 2 characters'
-      });
-    }
-
-    console.log(`🔍 Searching ingredients in ontology: "${q}"`);
-
-    // Get all ingredients first
-    const allIngredients = await ontologyService.getAllIngredients(200);
-    
-    // Search and rank results
-    const searchResults = allIngredients.data.filter(ingredient => {
-      const searchTerm = q.toLowerCase();
-      return (
-        ingredient.name.toLowerCase().includes(searchTerm) ||
-        (ingredient.benefit && ingredient.benefit.toLowerCase().includes(searchTerm)) ||
-        (ingredient.function && ingredient.function.toLowerCase().includes(searchTerm)) ||
-        (ingredient.explanation && ingredient.explanation.toLowerCase().includes(searchTerm))
-      );
-    });
-
-    // Sort by relevance
-    const sortedResults = searchResults.sort((a, b) => {
-      const searchTerm = q.toLowerCase();
-      
-      // Exact name match gets highest priority
-      if (a.name.toLowerCase() === searchTerm) return -1;
-      if (b.name.toLowerCase() === searchTerm) return 1;
-      
-      // Name starts with search term
-      if (a.name.toLowerCase().startsWith(searchTerm)) return -1;
-      if (b.name.toLowerCase().startsWith(searchTerm)) return 1;
-      
-      // Name contains search term
-      if (a.name.toLowerCase().includes(searchTerm) && !b.name.toLowerCase().includes(searchTerm)) return -1;
-      if (!a.name.toLowerCase().includes(searchTerm) && b.name.toLowerCase().includes(searchTerm)) return 1;
-      
-      return 0;
-    });
-
-    const limitedResults = sortedResults.slice(0, parseInt(limit));
-
-    res.json({
-      success: true,
-      data: limitedResults,
-      search_meta: {
-        query: q,
-        total_found: searchResults.length,
-        showing: limitedResults.length
-      },
-      ontology_powered: true,
-      message: `Found ${searchResults.length} ingredients matching "${q}"`
-    });
-
-  } catch (error) {
-    console.error('❌ Ingredient search error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
-  }
-});
 
 // ===== 7. KEY INGREDIENTS LIST =====
 router.get('/key-ingredients', async (req, res) => {
@@ -657,121 +721,143 @@ router.generateSafetyNotes = function(conflicts, synergies, ingredientName) {
   return notes;
 };
 
-router.calculateRiskLevel = function(conflictCount, totalIngredients) {
-  if (conflictCount === 0) return 'LOW';
-  if (conflictCount <= totalIngredients * 0.2) return 'MEDIUM';
-  return 'HIGH';
+router.calculateRiskLevel = function(conflictCount, ingredientCount) {
+  if (ingredientCount < 2) return 'NONE';
+  
+  const maxPossibleConflicts = ingredientCount * (ingredientCount - 1) / 2;
+  const conflictRatio = conflictCount / maxPossibleConflicts;
+  
+  if (conflictRatio > 0.5) return 'HIGH';
+  if (conflictRatio > 0.2) return 'MEDIUM';
+  if (conflictCount > 0) return 'LOW';
+  return 'NONE';
 };
 
 router.generateSafetyWarnings = function(conflicts) {
-  if (conflicts.length === 0) return ['✅ No safety concerns detected'];
-  
-  return conflicts.map(conflict => 
-    `⚠️ ${conflict.name1} and ${conflict.name2}: ${conflict.warning || 'Potential interaction'}`
-  );
+  return conflicts.map(conflict => ({
+    warning: `Avoid using ${conflict.name1} and ${conflict.name2} together`,
+    reason: conflict.reason || 'May cause irritation or reduce effectiveness',
+    severity: 'medium'
+  }));
 };
 
 router.calculateEnhancementPotential = function(synergyCount) {
-  if (synergyCount === 0) return 'NONE';
-  if (synergyCount <= 2) return 'LOW';
-  if (synergyCount <= 5) return 'MEDIUM';
-  return 'HIGH';
+  if (synergyCount > 8) return 'VERY_HIGH';
+  if (synergyCount > 5) return 'HIGH';
+  if (synergyCount > 2) return 'MEDIUM';
+  if (synergyCount > 0) return 'LOW';
+  return 'NONE';
 };
 
 router.extractBeneficialCombinations = function(synergies) {
   return synergies.map(synergy => ({
     combination: `${synergy.name1} + ${synergy.name2}`,
-    benefits: [synergy.benefit1, synergy.benefit2].filter(b => b && b.length > 0),
-    recommendation: synergy.recommendation
+    benefit: synergy.recommendation || synergy.benefit || 'Enhanced effectiveness',
+    confidence: 'high'
   }));
 };
 
-router.calculateCompatibilityScore = function(conflictCount, synergyCount, totalIngredients) {
-  let score = 70; // Base score
-  score -= conflictCount * 15; // Penalty for conflicts
-  score += synergyCount * 8;   // Bonus for synergies
-  score += Math.min(totalIngredients * 2, 15); // Bonus for complexity
-  return Math.max(0, Math.min(100, score));
+router.calculateCompatibilityScore = function(conflictCount, synergyCount, ingredientCount) {
+  if (ingredientCount < 2) return 100;
+  
+  const maxPossibleInteractions = ingredientCount * (ingredientCount - 1) / 2;
+  const conflictPenalty = (conflictCount / maxPossibleInteractions) * 40;
+  const synergyBonus = Math.min((synergyCount / maxPossibleInteractions) * 20, 20);
+  
+  const baseScore = 80;
+  const finalScore = Math.max(0, Math.min(100, baseScore - conflictPenalty + synergyBonus));
+  
+  return Math.round(finalScore);
 };
 
 router.generateOverallRecommendation = function(conflictCount, synergyCount) {
-  if (conflictCount > 0 && synergyCount === 0) {
-    return 'AVOID - Contains incompatible ingredients';
+  if (conflictCount > 3) {
+    return 'HIGH_CAUTION: Multiple conflicts detected. Consider reducing ingredients or consulting expert.';
+  } else if (conflictCount > 0) {
+    return 'MODERATE_CAUTION: Some conflicts detected. Use with care and monitor skin response.';
+  } else if (synergyCount > 5) {
+    return 'EXCELLENT: Great synergistic potential! This combination should work very well.';
+  } else if (synergyCount > 0) {
+    return 'GOOD: Some beneficial interactions detected. Safe to use together.';
+  } else {
+    return 'NEUTRAL: No significant interactions detected. Generally safe to use together.';
   }
-  if (conflictCount === 0 && synergyCount > 0) {
-    return 'EXCELLENT - No conflicts and beneficial combinations found';
-  }
-  if (conflictCount > 0 && synergyCount > 0) {
-    return 'MIXED - Benefits and risks present, use with caution';
-  }
-  return 'NEUTRAL - No significant interactions detected';
 };
 
 router.generateUsageGuidance = function(conflicts, synergies) {
   const guidance = [];
   
   if (conflicts.length > 0) {
-    guidance.push('🚨 Separate conflicting ingredients (use at different times)');
-    guidance.push('⏰ Consider morning/evening alternation');
-    guidance.push('🧪 Start with patch testing');
+    guidance.push('⚠️ Separate conflicting ingredients by time (AM/PM) or days');
+    guidance.push('🧪 Start with lower concentrations when combining');
+    guidance.push('👀 Monitor skin for irritation or sensitivity');
   }
   
   if (synergies.length > 0) {
-    guidance.push('✨ These ingredients work well together');
-    guidance.push('🔄 Can be layered in the same routine');
-    guidance.push('📈 May enhance each other\'s effectiveness');
+    guidance.push('✨ These ingredients work better together');
+    guidance.push('🎯 Apply in order: thinnest to thickest consistency');
+    guidance.push('⏰ Allow 5-10 minutes between applications');
   }
   
   if (guidance.length === 0) {
-    guidance.push('✅ Safe to use together');
-    guidance.push('📋 No special precautions needed');
+    guidance.push('ℹ️ Standard skincare application rules apply');
+    guidance.push('🧴 Patch test new combinations before full use');
   }
   
   return guidance;
 };
 
 router.calculateEnhancementScore = function(synergies) {
-  return Math.min(100, synergies.length * 15 + 25);
+  if (!synergies || synergies.length === 0) return 0;
+  
+  // Score based on number and quality of synergies
+  const baseScore = synergies.length * 10;
+  const qualityBonus = synergies.filter(s => 
+    s.recommendation && s.recommendation.length > 20
+  ).length * 5;
+  
+  return Math.min(100, baseScore + qualityBonus);
 };
 
 router.getBestCombinations = function(synergies) {
   return synergies
-    .sort((a, b) => (b.benefit1?.length || 0) + (b.benefit2?.length || 0) - (a.benefit1?.length || 0) - (a.benefit2?.length || 0))
-    .slice(0, 3)
+    .sort((a, b) => (b.recommendation?.length || 0) - (a.recommendation?.length || 0))
+    .slice(0, 5)
     .map(synergy => ({
       ingredients: [synergy.name1, synergy.name2],
-      benefits: [synergy.benefit1, synergy.benefit2].filter(Boolean),
-      recommendation: synergy.recommendation
+      benefit: synergy.recommendation || 'Enhanced effectiveness',
+      rating: 'high'
     }));
 };
 
 router.generateSynergyUsageTips = function(synergies) {
-  const tips = [];
+  const tips = [
+    '🌟 Apply ingredients in order of thinnest to thickest consistency',
+    '⏰ Allow each layer to absorb before applying the next',
+    '🧪 Start with lower concentrations to test tolerance'
+  ];
   
-  if (synergies.length > 0) {
-    tips.push('🌟 Layer ingredients in order of thinnest to thickest consistency');
-    tips.push('⏰ Allow 5-10 minutes between each application');
-    tips.push('🧴 Start with lower concentrations to test tolerance');
-    tips.push('📊 Monitor skin response and adjust frequency as needed');
+  if (synergies.some(s => s.name1.toLowerCase().includes('acid') || s.name2.toLowerCase().includes('acid'))) {
+    tips.push('🌙 Consider using acids in evening routine');
+    tips.push('☀️ Always use sunscreen when using acid combinations');
   }
   
   return tips;
 };
 
 router.extractPotentialBenefits = function(synergies) {
-  const benefits = [...new Set(
-    synergies.flatMap(synergy => [synergy.benefit1, synergy.benefit2])
-      .filter(benefit => benefit && benefit.length > 0)
-  )];
+  const benefits = synergies.map(synergy => 
+    synergy.recommendation || synergy.benefit || 'Enhanced effectiveness'
+  );
   
-  return benefits;
+  return [...new Set(benefits)].slice(0, 8);
 };
 
 router.assessConflictRisk = function(conflicts) {
   if (conflicts.length === 0) return 'NO_RISK';
-  if (conflicts.length <= 2) return 'LOW_RISK';
-  if (conflicts.length <= 4) return 'MEDIUM_RISK';
-  return 'HIGH_RISK';
+  if (conflicts.length > 3) return 'HIGH_RISK';
+  if (conflicts.length > 1) return 'MODERATE_RISK';
+  return 'LOW_RISK';
 };
 
 router.generateImmediateActions = function(conflicts) {
@@ -779,9 +865,9 @@ router.generateImmediateActions = function(conflicts) {
   
   return [
     '🛑 Stop using conflicting ingredients together immediately',
-    '🧼 If irritation occurs, cleanse with gentle cleanser',
-    '💧 Apply soothing moisturizer to calm skin',
-    '👩‍⚕️ Consult dermatologist if irritation persists'
+    '🧴 Separate usage by time (AM/PM) or alternate days',
+    '💧 Use gentle, hydrating products to calm skin',
+    '👨‍⚕️ Consult dermatologist if irritation persists'
   ];
 };
 
@@ -789,23 +875,25 @@ router.suggestAlternatives = function(conflicts) {
   const alternatives = [];
   
   conflicts.forEach(conflict => {
-    alternatives.push(`Instead of using ${conflict.name1} with ${conflict.name2}, try alternating days`);
-    alternatives.push(`Use ${conflict.name1} in AM and ${conflict.name2} in PM`);
+    if (conflict.name1.toLowerCase().includes('retinol') && conflict.name2.toLowerCase().includes('acid')) {
+      alternatives.push('Use retinol at night and acids in the morning');
+    } else if (conflict.name1.toLowerCase().includes('vitamin c') && conflict.name2.toLowerCase().includes('retinol')) {
+      alternatives.push('Use Vitamin C in AM and retinol in PM');
+    } else {
+      alternatives.push(`Alternate ${conflict.name1} and ${conflict.name2} on different days`);
+    }
   });
   
-  if (alternatives.length === 0) {
-    alternatives.push('Current combination appears safe to use together');
-  }
-  
-  return [...new Set(alternatives)];
+  return alternatives.length > 0 ? alternatives : ['Consider using ingredients separately or consulting an expert'];
 };
 
 router.generateConflictWarnings = function(conflicts) {
-  if (conflicts.length === 0) return ['✅ No warnings - safe combination'];
-  
-  return conflicts.map(conflict => 
-    `⚠️ ${conflict.warning || 'Potential interaction between ' + conflict.name1 + ' and ' + conflict.name2}`
-  );
+  return conflicts.map(conflict => ({
+    ingredients: [conflict.name1, conflict.name2],
+    warning: `${conflict.name1} may conflict with ${conflict.name2}`,
+    potential_effects: ['Skin irritation', 'Reduced effectiveness', 'Increased sensitivity'],
+    recommendation: 'Use separately or under professional guidance'
+  }));
 };
 
 module.exports = router;

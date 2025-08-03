@@ -26,13 +26,33 @@ const ProductsPage = () => {
     category: '',
     brand: '',
     skin_type: '',
-    concerns: [],
+    concerns: [],        // ADD THIS
+    sensitivities: [],   // ADD THIS
+    properties: [],      // ADD THIS
     price_range: '',
     sort: 'relevance'
   });
 
   const productsPerPage = 12;
 
+  const filterOptions = {
+    categories: [
+      'Cleanser', 'Moisturizer', 'Serum', 'Sunscreen', 'Toner', 
+      'Treatment', 'Mask', 'Eye Care', 'Oil'
+    ],
+    concerns: [
+      'Acne', 'Anti-Aging', 'Wrinkles', 'Dark Spots', 'Sensitivity', 
+      'Dryness', 'Oiliness', 'Redness', 'Large Pores', 'Dullness'
+    ],
+    sensitivities: [
+      'Fragrance', 'Alcohol', 'Parabens', 'Sulfates', 'Silicones'
+    ],
+    properties: [
+      'Alcohol Free', 'Fragrance Free', 'Paraben Free', 
+      'Sulfate Free', 'Silicone Free'
+    ]
+  };
+  
   // Parse URL parameters on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -92,6 +112,22 @@ const ProductsPage = () => {
         queryParams.set('ontology', 'true');
       }
       
+      // Add multiple concerns
+      if (filters.concerns.length > 0) {
+        queryParams.set('concerns', filters.concerns.join(','));
+      }
+
+      // Add sensitivities
+      if (filters.sensitivities.length > 0) {
+        queryParams.set('sensitivities', filters.sensitivities.join(','));
+      }
+
+      // Add property filters
+      filters.properties.forEach(prop => {
+        const paramName = prop.toLowerCase().replace(' ', '_');
+        queryParams.set(paramName, 'true');
+      });
+
       // Add current filters
       if (filters.search) queryParams.set('search', filters.search);
       if (filters.category) queryParams.set('category', filters.category);
@@ -129,21 +165,27 @@ const ProductsPage = () => {
   };
 
   // Handle filter changes
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+  const handleFilterChange = (filterType, value, isMultiple = false) => {
+  if (isMultiple) {
+    const currentValues = filters[filterType] || [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    
+    setFilters(prev => ({ ...prev, [filterType]: newValues }));
+  } else {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
+  }
     
     // Update URL and reload products
     const urlParams = new URLSearchParams(location.search);
     
     if (value) {
-      urlParams.set(key, value);
+      urlParams.set(filterType, isMultiple ? filters[filterType].join(',') : value);
     } else {
-      urlParams.delete(key);
+      urlParams.delete(filterType);
     }
-    
+    setTimeout(() => loadProducts(1), 300);
     navigate(`${location.pathname}?${urlParams.toString()}`, { replace: true });
   };
 
@@ -152,6 +194,33 @@ const ProductsPage = () => {
     loadProducts(page);
   };
 
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      category: '',
+      brand: '',
+      skin_type: '',
+      concerns: [],        // TAMBAHKAN ini ke state filters Anda juga!
+      sensitivities: [],   // TAMBAHKAN ini ke state filters Anda juga!
+      properties: [],      // TAMBAHKAN ini ke state filters Anda juga!
+      price_range: '',
+      sort: 'relevance'
+    });
+    
+    if (isQuizBased) {
+      const urlParams = new URLSearchParams(location.search);
+      const params = new URLSearchParams();
+      
+      if (urlParams.get('skin_type')) params.set('skin_type', urlParams.get('skin_type'));
+      if (urlParams.get('concerns')) params.set('concerns', urlParams.get('concerns'));
+      if (urlParams.get('quiz_completed')) params.set('quiz_completed', 'true');
+      
+      navigate(`/products?${params.toString()}`, { replace: true });
+    } else {
+      navigate('/products', { replace: true });
+    }
+  };
   // Take quiz button
   const goToQuiz = () => {
     navigate('/quiz');
@@ -231,6 +300,7 @@ const ProductsPage = () => {
       {/* Filters Section */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
+        {/* Main Filter Row */}
           <div className="flex flex-wrap gap-4">
             {/* Search */}
             <div className="flex-1 min-w-64">
@@ -269,6 +339,80 @@ const ProductsPage = () => {
               <option value="name_desc">Name Z-A</option>
               <option value="category">Category</option>
             </select>
+            {/* Clear Filters Button */}
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 text-blue-600 hover:text-blue-800 border border-blue-300 rounded-lg hover:bg-blue-50"
+            >
+              Clear Filters
+            </button>
+          </div>
+          <div className="space-y-4">
+            {/* Skin Concerns */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Skin Concerns ({filters.concerns.length} selected)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.concerns.map((concern) => (
+                  <button
+                    key={concern}
+                    onClick={() => handleFilterChange('concerns', concern, true)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                      filters.concerns.includes(concern)
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-blue-50'
+                    }`}
+                  >
+                    {concern}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Sensitivities */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Avoid Ingredients ({filters.sensitivities.length} selected)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.sensitivities.map((sensitivity) => (
+                  <button
+                    key={sensitivity}
+                    onClick={() => handleFilterChange('sensitivities', sensitivity, true)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                      filters.sensitivities.includes(sensitivity)
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-red-50'
+                    }`}
+                  >
+                    ❌ {sensitivity}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Product Properties */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Product Properties ({filters.properties.length} selected)
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {filterOptions.properties.map((property) => (
+                  <button
+                    key={property}
+                    onClick={() => handleFilterChange('properties', property, true)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                      filters.properties.includes(property)
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-green-50'
+                    }`}
+                  >
+                    ✓ {property}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -311,6 +455,9 @@ const ProductsPage = () => {
                 <p className="text-gray-600">
                   Showing {products.length} of {totalProducts} products
                   {isQuizBased && ' personalized for you'}
+                  {(filters.concerns.length > 0 || filters.sensitivities.length > 0 || filters.properties.length > 0) && 
+                    ` with ${filters.concerns.length + filters.sensitivities.length + filters.properties.length} filters applied`
+                  }
                 </p>
               </div>
             </div>

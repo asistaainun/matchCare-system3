@@ -1,5 +1,5 @@
 // backend/routes/products.js
-// COMPLETE PRODUCTS ROUTES WITH QUIZ INTEGRATION
+// FIXED VERSION - Proper Array Handling for Concerns
 
 const express = require('express');
 const { pool } = require('../config/database');
@@ -15,7 +15,7 @@ router.get('/', async (req, res) => {
       page = 1,
       limit = 12,
       
-      // Quiz results
+      // Quiz results - FIX: Better array handling
       skin_type,
       concerns,
       sensitivities,
@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
       sort = 'relevance'
     } = req.query;
 
-    console.log('🛍️ Products request:', {
+    console.log('🛍️ Products request RAW:', {
       page, limit, skin_type, concerns, sensitivities, 
       search, category, brand, sort, ontology
     });
@@ -36,27 +36,64 @@ router.get('/', async (req, res) => {
     const client = await pool.connect();
     
     try {
-      // Parse concerns and sensitivities
-      const concernsArray = concerns ? concerns.split(',').map(c => c.trim().toLowerCase()) : [];
-      const sensitivitiesArray = sensitivities ? sensitivities.split(',').map(s => s.trim().toLowerCase()) : [];
+      // FIX: Robust array parsing to prevent malformed array literal
+      let concernsArray = [];
+      let sensitivitiesArray = [];
       
-      // Build dynamic query
+      // Parse concerns - handle both string and array
+      if (concerns) {
+        if (typeof concerns === 'string') {
+          // Split comma-separated string and clean
+          concernsArray = concerns.split(',')
+            .map(c => c.trim().toLowerCase())
+            .filter(c => c.length > 0);
+        } else if (Array.isArray(concerns)) {
+          concernsArray = concerns
+            .map(c => String(c).trim().toLowerCase())
+            .filter(c => c.length > 0);
+        }
+      }
+      
+      // Parse sensitivities - handle both string and array
+      if (sensitivities) {
+        if (typeof sensitivities === 'string') {
+          sensitivitiesArray = sensitivities.split(',')
+            .map(s => s.trim().toLowerCase())
+            .filter(s => s.length > 0);
+        } else if (Array.isArray(sensitivities)) {
+          sensitivitiesArray = sensitivities
+            .map(s => String(s).trim().toLowerCase())
+            .filter(s => s.length > 0);
+        }
+      }
+
+      console.log('🛍️ Parsed arrays:', { concernsArray, sensitivitiesArray });
+
+      // Build dynamic query with SAFE array handling
       let whereConditions = ['p.is_active = true'];
       let queryParams = [];
       let paramIndex = 1;
       let joinClauses = ['LEFT JOIN brands b ON p.brand_id = b.id'];
       
-      // Quiz-based filtering
+      // Skin type filtering with NULL safety
       if (skin_type) {
-        whereConditions.push(`($${paramIndex} = ANY(p.suitable_for_skin_types) OR array_length(p.suitable_for_skin_types, 1) IS NULL)`);
+        whereConditions.push(`(
+          p.suitable_for_skin_types IS NULL OR 
+          array_length(p.suitable_for_skin_types, 1) IS NULL OR
+          $${paramIndex} = ANY(p.suitable_for_skin_types)
+        )`);
         queryParams.push(skin_type.toLowerCase());
         paramIndex++;
       }
       
-      // Concerns filtering
+      // FIX: Concerns filtering with proper NULL handling and array safety
       if (concernsArray.length > 0) {
         const concernConditions = concernsArray.map(concern => {
-          const condition = `$${paramIndex} = ANY(p.addresses_concerns)`;
+          const condition = `(
+            p.addresses_concerns IS NOT NULL AND 
+            array_length(p.addresses_concerns, 1) > 0 AND
+            $${paramIndex} = ANY(p.addresses_concerns)
+          )`;
           queryParams.push(concern);
           paramIndex++;
           return condition;
@@ -64,24 +101,24 @@ router.get('/', async (req, res) => {
         whereConditions.push(`(${concernConditions.join(' OR ')})`);
       }
       
-      // Sensitivity filtering (avoid products that contain sensitive ingredients)
+      // FIX: Sensitivity filtering with proper boolean handling
       if (sensitivitiesArray.length > 0) {
         sensitivitiesArray.forEach(sensitivity => {
           switch(sensitivity) {
             case 'fragrance':
-              whereConditions.push('p.fragrance_free = true');
+              whereConditions.push('(p.fragrance_free IS TRUE)');
               break;
             case 'alcohol':
-              whereConditions.push('p.alcohol_free = true');
+              whereConditions.push('(p.alcohol_free IS TRUE)');
               break;
             case 'silicone':
-              whereConditions.push('p.silicone_free = true');
+              whereConditions.push('(p.silicone_free IS TRUE)');
               break;
             case 'paraben':
-              whereConditions.push('p.paraben_free = true');
+              whereConditions.push('(p.paraben_free IS TRUE)');
               break;
             case 'sulfate':
-              whereConditions.push('p.sulfate_free = true');
+              whereConditions.push('(p.sulfate_free IS TRUE)');
               break;
           }
         });
@@ -112,32 +149,48 @@ router.get('/', async (req, res) => {
         paramIndex++;
       }
       
-      // Build sorting
+      // FIX: Build sorting with SAFE array operations
       let orderBy = '';
-      switch (sort) {
-        case 'name_asc':
-          orderBy = 'ORDER BY p.name ASC';
-          break;
-        case 'name_desc':
-          orderBy = 'ORDER BY p.name DESC';
-          break;
-        case 'category':
-          orderBy = 'ORDER BY p.main_category, p.name';
-          break;
-        case 'relevance':
-        default:
-          if (skin_type || concernsArray.length > 0) {
-            // Quiz-based relevance scoring
-            orderBy = `ORDER BY 
-              (CASE WHEN $1 = ANY(p.suitable_for_skin_types) THEN 40 ELSE 0 END) +
-              (CASE WHEN array_length(p.suitable_for_skin_types, 1) IS NULL THEN 20 ELSE 0 END) +
-              (SELECT COUNT(*) * 10 FROM unnest(p.addresses_concerns) AS concern 
-               WHERE concern = ANY($${concernsArray.length > 0 ? '2' : 'null'}::text[]))
-              DESC, p.name ASC`;
-          } else {
+      let selectExtraFields = '';
+      
+      if ((skin_type || concernsArray.length > 0) && sort === 'relevance') {
+        // FIX: Safe quiz-based relevance scoring without problematic array operations
+        selectExtraFields = `, (
+          COALESCE(
+            CASE 
+              WHEN p.suitable_for_skin_types IS NULL THEN 30
+              WHEN array_length(p.suitable_for_skin_types, 1) IS NULL THEN 30
+              WHEN $1 = ANY(p.suitable_for_skin_types) THEN 50 
+              ELSE 10 
+            END, 0
+          ) +
+          COALESCE(
+            (SELECT COUNT(*) * 15 
+             FROM unnest(COALESCE(p.addresses_concerns, ARRAY[]::text[])) AS concern 
+             WHERE ${concernsArray.length > 0 ? 
+               concernsArray.map((_, i) => `concern = $${2 + i}`).join(' OR ') : 
+               'FALSE'
+             }), 
+            0
+          )
+        ) as match_score`;
+        
+        orderBy = 'ORDER BY match_score DESC, p.name ASC';
+      } else {
+        switch (sort) {
+          case 'name_asc':
             orderBy = 'ORDER BY p.name ASC';
-          }
-          break;
+            break;
+          case 'name_desc':
+            orderBy = 'ORDER BY p.name DESC';
+            break;
+          case 'category':
+            orderBy = 'ORDER BY p.main_category, p.name';
+            break;
+          default:
+            orderBy = 'ORDER BY p.created_at DESC, p.name ASC';
+            break;
+        }
       }
       
       // Count total products
@@ -148,15 +201,18 @@ router.get('/', async (req, res) => {
         WHERE ${whereConditions.join(' AND ')}
       `;
       
+      console.log('🔍 Count query:', countQuery);
+      console.log('📊 Count params:', queryParams);
+      
       const countResult = await client.query(countQuery, queryParams);
       const totalProducts = parseInt(countResult.rows[0].total);
       
       // Calculate pagination
       const pageNum = Math.max(1, parseInt(page));
-      const limitNum = Math.min(50, Math.max(1, parseInt(limit))); // Max 50 per page
+      const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
       const offset = (pageNum - 1) * limitNum;
       
-      // Main products query
+      // FIX: Main products query with SAFE parameter handling
       const productsQuery = `
         SELECT 
           p.id,
@@ -175,14 +231,8 @@ router.get('/', async (req, res) => {
           p.sulfate_free,
           p.silicone_free,
           p.key_ingredients_csv,
-          p.product_url,
-          -- Calculate match score for quiz results
-          ${skin_type || concernsArray.length > 0 ? `
-          (CASE WHEN $1 = ANY(p.suitable_for_skin_types) THEN 40 ELSE 0 END) +
-          (CASE WHEN array_length(p.suitable_for_skin_types, 1) IS NULL THEN 20 ELSE 0 END) +
-          (SELECT COALESCE(COUNT(*) * 10, 0) FROM unnest(p.addresses_concerns) AS concern 
-           WHERE concern = ANY(ARRAY[${concernsArray.map((_, i) => `$${i + 2}`).join(',')}]::text[]))
-          ` : '0'} as match_score
+          p.product_url
+          ${selectExtraFields}
         FROM products p
         ${joinClauses.join(' ')}
         WHERE ${whereConditions.join(' AND ')}
@@ -192,7 +242,7 @@ router.get('/', async (req, res) => {
       
       queryParams.push(limitNum, offset);
       
-      console.log('🔍 Executing products query:', productsQuery);
+      console.log('🔍 Products query:', productsQuery);
       console.log('📊 Query parameters:', queryParams);
       
       const productsResult = await client.query(productsQuery, queryParams);
@@ -207,7 +257,7 @@ router.get('/', async (req, res) => {
           description: product.description,
           category: product.main_category,
           subcategory: product.subcategory,
-          image: product.image_urls || '/images/placeholder-product.jpg',
+          image: product.image_urls || ['/images/placeholder-product.jpg'],
           suitable_for: product.suitable_for_skin_types || [],
           addresses: product.addresses_concerns || [],
           formulation: {
@@ -261,7 +311,7 @@ router.get('/', async (req, res) => {
         },
         quiz_based: !!(skin_type || concernsArray.length > 0),
         processing_time_ms: processingTime,
-        total: totalProducts // For backward compatibility
+        total: totalProducts
       });
       
     } finally {
@@ -278,7 +328,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get single product by ID
+
+// Get single product by ID - FIXED with proper error handling
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -314,28 +365,34 @@ router.get('/:id', async (req, res) => {
       
       const product = result.rows[0];
       
-      // Get product ingredients
-      const ingredientsQuery = `
-        SELECT 
-          i.name,
-          i.actual_functions,
-          i.embedded_functions,
-          i.functional_categories,
-          i.key_ingredient_types,
-          i.is_key_ingredient,
-          i.suitable_for_skin_types,
-          i.addresses_concerns,
-          i.provided_benefits,
-          i.sensitivities,
-          pi.is_key_ingredient as product_key_ingredient,
-          pi.position
-        FROM product_ingredients pi
-        JOIN ingredients i ON pi.ingredient_id = i.id
-        WHERE pi.product_id = $1
-        ORDER BY pi.position ASC, i.name ASC
-      `;
-      
-      const ingredientsResult = await client.query(ingredientsQuery, [parseInt(id)]);
+      // FIX: Get product ingredients with proper error handling
+      let ingredients = [];
+      try {
+        const ingredientsQuery = `
+          SELECT 
+            i.name,
+            i.actual_functions,
+            i.embedded_functions,
+            i.functional_categories,
+            i.key_ingredient_types,
+            i.is_key_ingredient,
+            i.suitable_for_skin_types,
+            i.addresses_concerns,
+            i.provided_benefits,
+            i.sensitivities,
+            pi.is_key_ingredient as product_key_ingredient,
+            pi.position
+          FROM product_ingredients pi
+          JOIN ingredients i ON pi.ingredient_id = i.id
+          WHERE pi.product_id = $1
+          ORDER BY pi.position ASC, i.name ASC
+        `;
+        
+        const ingredientsResult = await client.query(ingredientsQuery, [parseInt(id)]);
+        ingredients = ingredientsResult.rows;
+      } catch (ingredientError) {
+        console.warn('⚠️ Could not load ingredients for product:', ingredientError.message);
+      }
       
       const formattedProduct = {
         id: product.id,
@@ -360,7 +417,7 @@ router.get('/:id', async (req, res) => {
           sulfate_free: product.sulfate_free,
           silicone_free: product.silicone_free
         },
-        ingredients: ingredientsResult.rows.map(ing => ({
+        ingredients: ingredients.map(ing => ({
           name: ing.name,
           functions: ing.actual_functions ? ing.actual_functions.split(',') : [],
           categories: ing.functional_categories ? ing.functional_categories.split(',') : [],
@@ -405,17 +462,18 @@ router.get('/meta/categories', async (req, res) => {
     
     try {
       const query = `
-        SELECT DISTINCT main_category as category
+        SELECT DISTINCT main_category as category, COUNT(*) as product_count
         FROM products 
         WHERE main_category IS NOT NULL AND is_active = true
-        ORDER BY main_category
+        GROUP BY main_category
+        ORDER BY product_count DESC, main_category
       `;
       
       const result = await client.query(query);
       
       res.json({
         success: true,
-        categories: result.rows.map(row => row.category)
+        categories: result.rows
       });
       
     } finally {
@@ -438,18 +496,19 @@ router.get('/meta/brands', async (req, res) => {
     
     try {
       const query = `
-        SELECT DISTINCT b.name as brand
+        SELECT DISTINCT b.name as brand, COUNT(p.id) as product_count
         FROM brands b
         JOIN products p ON b.id = p.brand_id
         WHERE p.is_active = true
-        ORDER BY b.name
+        GROUP BY b.name
+        ORDER BY product_count DESC, b.name
       `;
       
       const result = await client.query(query);
       
       res.json({
         success: true,
-        brands: result.rows.map(row => row.brand)
+        brands: result.rows
       });
       
     } finally {
@@ -461,6 +520,150 @@ router.get('/meta/brands', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to load brands'
+    });
+  }
+});
+
+// Perbaiki endpoint search yang error
+
+router.get('/search', async (req, res) => {
+  try {
+    const { 
+      q, 
+      category, 
+      skin_type, 
+      concerns = [], 
+      sensitivities = [], 
+      properties = [],
+      page = 1, 
+      limit = 12 
+    } = req.query;
+    
+    const client = await pool.connect();
+    
+    try {
+      let query = `
+        SELECT 
+          p.id,
+          p.name,
+          COALESCE(b.name, 'Unknown Brand') as brand_name,
+          p.main_category,
+          p.subcategory,
+          p.description,
+          p.ingredient_list,
+          p.alcohol_free,
+          p.fragrance_free,
+          p.paraben_free,
+          p.sulfate_free,
+          p.silicone_free,
+          p.product_url,
+          p.local_image_path
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        WHERE p.is_active = true
+      `;
+      
+      const params = [];
+      let paramCount = 0;
+      
+      // Search query
+      if (q && q.trim()) {
+        paramCount++;
+        query += ` AND (
+          LOWER(p.name) LIKE LOWER($${paramCount}) 
+          OR LOWER(b.name) LIKE LOWER($${paramCount})
+          OR LOWER(p.description) LIKE LOWER($${paramCount})
+        )`;
+        params.push(`%${q.trim()}%`);
+      }
+      
+      // Category filter
+      if (category) {
+        paramCount++;
+        query += ` AND LOWER(p.main_category) = LOWER($${paramCount})`;
+        params.push(category);
+      }
+      
+      // Sensitivities filter (avoid ingredients)
+      const sensitivitiesArray = Array.isArray(sensitivities) ? sensitivities : 
+                                typeof sensitivities === 'string' ? sensitivities.split(',') : [];
+      
+      if (sensitivitiesArray.includes('fragrance')) {
+        query += ` AND (p.fragrance_free = true OR p.fragrance_free IS NULL)`;
+      }
+      if (sensitivitiesArray.includes('alcohol')) {
+        query += ` AND (p.alcohol_free = true OR p.alcohol_free IS NULL)`;
+      }
+      if (sensitivitiesArray.includes('parabens')) {
+        query += ` AND (p.paraben_free = true OR p.paraben_free IS NULL)`;
+      }
+      if (sensitivitiesArray.includes('sulfates')) {
+        query += ` AND (p.sulfate_free = true OR p.sulfate_free IS NULL)`;
+      }
+      if (sensitivitiesArray.includes('silicones')) {
+        query += ` AND (p.silicone_free = true OR p.silicone_free IS NULL)`;
+      }
+      
+      // Properties filter
+      const propertiesArray = Array.isArray(properties) ? properties : 
+                             typeof properties === 'string' ? properties.split(',') : [];
+      
+      if (propertiesArray.includes('alcohol_free')) {
+        query += ` AND p.alcohol_free = true`;
+      }
+      if (propertiesArray.includes('fragrance_free')) {
+        query += ` AND p.fragrance_free = true`;
+      }
+      if (propertiesArray.includes('paraben_free')) {
+        query += ` AND p.paraben_free = true`;
+      }
+      if (propertiesArray.includes('sulfate_free')) {
+        query += ` AND p.sulfate_free = true`;
+      }
+      if (propertiesArray.includes('silicone_free')) {
+        query += ` AND p.silicone_free = true`;
+      }
+      
+      // Pagination
+      const offset = (page - 1) * limit;
+      query += ` ORDER BY p.name LIMIT $${paramCount + 1} OFFSET $${paramCount + 2}`;
+      params.push(limit, offset);
+      
+      const result = await client.query(query, params);
+      
+      // Count total
+      let countQuery = query.replace(/SELECT.*?FROM/, 'SELECT COUNT(*) FROM')
+                           .replace(/ORDER BY.*$/, '');
+      const countParams = params.slice(0, -2); // Remove limit and offset
+      const countResult = await client.query(countQuery, countParams);
+      
+      res.json({
+        success: true,
+        products: result.rows,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: parseInt(countResult.rows[0].count),
+          pages: Math.ceil(countResult.rows[0].count / limit)
+        },
+        filters_applied: {
+          search: q || null,
+          category: category || null,
+          sensitivities: sensitivitiesArray,
+          properties: propertiesArray
+        }
+      });
+      
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('Product search error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Search failed',
+      message: error.message
     });
   }
 });
@@ -517,5 +720,158 @@ function generateMatchReasons(product, { skin_type, concerns, sensitivities }) {
   
   return reasons.length > 0 ? reasons : ['Good match for your profile'];
 }
+
+
+// ===== PRODUCT COMPATIBILITY CHECK =====
+router.post('/:id/compatibility-check', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { skin_type, sensitivities = [], concerns = [] } = req.body;
+
+    console.log(`🧪 Compatibility check for product ${id}`, { skin_type, sensitivities, concerns });
+
+    const client = await pool.connect();
+    
+    try {
+      // Get product details
+      const productQuery = `
+        SELECT 
+          p.name,
+          p.ingredient_list,
+          p.key_ingredients_csv,
+          p.suitable_for_skin_types,
+          p.addresses_concerns,
+          p.alcohol_free,
+          p.fragrance_free,
+          p.paraben_free,
+          p.sulfate_free,
+          p.silicone_free
+        FROM products p
+        WHERE p.id = $1 AND p.is_active = true
+      `;
+
+      const productResult = await client.query(productQuery, [id]);
+
+      if (productResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+
+      const product = productResult.rows[0];
+
+      // Perform compatibility analysis
+      const compatibility = {
+        overall_score: 100,
+        skin_type_match: false,
+        concern_match: false,
+        safety_warnings: [],
+        recommendations: []
+      };
+
+      // Check skin type compatibility
+      if (product.suitable_for_skin_types && skin_type) {
+        const suitableTypes = product.suitable_for_skin_types || [];
+        compatibility.skin_type_match = suitableTypes.includes(skin_type.toLowerCase()) || 
+                                       suitableTypes.includes('all');
+        
+        if (!compatibility.skin_type_match) {
+          compatibility.overall_score -= 20;
+          compatibility.recommendations.push(`This product is not specifically formulated for ${skin_type} skin`);
+        }
+      }
+
+      // Check concern compatibility
+      if (product.addresses_concerns && concerns.length > 0) {
+        const productConcerns = product.addresses_concerns || [];
+        const matchingConcerns = concerns.filter(concern => 
+          productConcerns.some(pc => pc.toLowerCase().includes(concern.toLowerCase()))
+        );
+        
+        compatibility.concern_match = matchingConcerns.length > 0;
+        compatibility.matching_concerns = matchingConcerns;
+
+        if (!compatibility.concern_match) {
+          compatibility.overall_score -= 15;
+          compatibility.recommendations.push('This product may not address your primary skin concerns');
+        }
+      }
+
+      // Check sensitivities
+      sensitivities.forEach(sensitivity => {
+        switch (sensitivity.toLowerCase()) {
+          case 'fragrance':
+            if (!product.fragrance_free) {
+              compatibility.overall_score -= 25;
+              compatibility.safety_warnings.push('Contains fragrance - may cause irritation');
+            }
+            break;
+          case 'alcohol':
+            if (!product.alcohol_free) {
+              compatibility.overall_score -= 20;
+              compatibility.safety_warnings.push('Contains alcohol - may be drying');
+            }
+            break;
+          case 'paraben':
+            if (!product.paraben_free) {
+              compatibility.overall_score -= 15;
+              compatibility.safety_warnings.push('Contains parabens - may cause sensitivity');
+            }
+            break;
+          case 'sulfate':
+            if (!product.sulfate_free) {
+              compatibility.overall_score -= 15;
+              compatibility.safety_warnings.push('Contains sulfates - may be harsh');
+            }
+            break;
+          case 'silicone':
+            if (!product.silicone_free) {
+              compatibility.overall_score -= 10;
+              compatibility.safety_warnings.push('Contains silicones - may cause buildup');
+            }
+            break;
+        }
+      });
+
+      // Determine overall recommendation
+      if (compatibility.overall_score >= 80) {
+        compatibility.recommendation = 'Highly Recommended';
+        compatibility.status = 'excellent';
+      } else if (compatibility.overall_score >= 60) {
+        compatibility.recommendation = 'Good Match';
+        compatibility.status = 'good';
+      } else if (compatibility.overall_score >= 40) {
+        compatibility.recommendation = 'Proceed with Caution';
+        compatibility.status = 'caution';
+      } else {
+        compatibility.recommendation = 'Not Recommended';
+        compatibility.status = 'not_recommended';
+      }
+
+      console.log(`✅ Compatibility analysis complete: ${compatibility.overall_score}% match`);
+
+      res.json({
+        success: true,
+        data: {
+          product_name: product.name,
+          compatibility,
+          analysis_date: new Date().toISOString()
+        }
+      });
+      
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('❌ Compatibility check error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to perform compatibility check',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+    });
+  }
+});
 
 module.exports = router;

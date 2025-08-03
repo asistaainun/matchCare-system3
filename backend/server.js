@@ -39,38 +39,39 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Logging
-app.use(morgan('combined'));
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('combined'));
+}
 
 // Static files for images
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
-// Request logging
+// Request logging with better formatting
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  const timestamp = new Date().toISOString();
+  console.log(`${timestamp} - ${req.method} ${req.path}`);
+  
+  // Log query parameters for debugging
+  if (Object.keys(req.query).length > 0) {
+    console.log(`  📊 Query params:`, req.query);
+  }
+  
   next();
 });
 
 // ===== ADD THESE IMPORTS AT THE TOP =====
 const categoryRoutes = require('./routes/categories');
-const brandRoutes = require('./routes/brands');
-const quizRoutes = require('./routes/quiz');
-const productsRoutes = require('./routes/products');
-const ontologyRoutes = require('./routes/ontology');
-const ingredientRoutes = require('./routes/ingredients');
-
-// ===== ADD THESE ROUTES AFTER YOUR EXISTING ROUTES =====
 app.use('/api/categories', categoryRoutes);
+const brandRoutes = require('./routes/brands');
 app.use('/api/brands', brandRoutes);
-
-// 🧠 ONTOLOGY-POWERED PRODUCT ROUTES (Critical for thesis)
+const quizRoutes = require('./routes/quiz');
 app.use('/api/quiz', quizRoutes);
+const productsRoutes = require('./routes/products');
 app.use('/api/products', productsRoutes);
+const ontologyRoutes = require('./routes/ontology')
 app.use('/api/ontology', ontologyRoutes);
-
-// 🧠 ONTOLOGY-POWERED INGREDIENT ROUTES (Critical for thesis) 
+const ingredientRoutes = require('./routes/ingredients');
 app.use('/api/ingredients', ingredientRoutes);
-
-// ===== ONTOLOGY ANALYSIS ROUTES =====
 const analysisRoutes = require('./routes/analysis');
 app.use('/api/analysis', analysisRoutes);
 
@@ -147,13 +148,23 @@ app.get('/', (req, res) => {
       '🛡️ Semantic Safety Analysis', 
       '📊 Knowledge Graph Utilization',
       '🎯 Ingredient Interaction Detection',
-      '📝 Academic-Grade Explanations',
+      '📝 Academic-Grade Explanations'
+    ],
+    ontology_features: [
+      'SPARQL Semantic Reasoning',
+      'Knowledge Graph Utilization', 
+      'Ingredient Interaction Analysis',
+      'Skin Type Ontology Mapping',
+      'Safety Inference Engine',
+      'Compatibility Matrix Analysis'
+    ],
+    core_features: [
       'Complete Quiz System with Skin Type Assessment',
-      'Ontology-based Product Recommendations', 
-      'Advanced Product Filtering',
-      'Ingredient Analysis',
-      'Safety Recommendations',
-      'Guest Session Management'
+      'Guest Session Management',
+      'Advanced Product Filtering with Array Support',
+      'Real-time Ontology Recommendations',
+      'Ingredient Safety Analysis',
+      'Comprehensive Product Database'
     ],
     technical_innovation: [
       'First ontology-based skincare recommendation in Indonesia',
@@ -167,8 +178,13 @@ app.get('/', (req, res) => {
       
       // 🎓 MAIN ONTOLOGY ENDPOINTS
       ontology_recommendations: {
-        guest: 'POST /api/ontology/recommendations',
+        recommendations: 'POST /api/ontology/recommendations',
         test: 'GET /api/test/ontology-engine',
+        ingredient_compatibility: 'POST /api/ontology/ingredient-compatibility',
+        metrics: 'GET /api/ontology/metrics',
+        ingredient_search: 'GET /api/ontology/ingredients/search',
+        relationships: 'GET /api/ontology/ingredients/:id/relationships',
+        knowledge_base: 'GET /api/ontology/knowledge-base',
         all: '/api/ontology/*'
       },
 
@@ -177,6 +193,7 @@ app.get('/', (req, res) => {
         list: 'GET /api/products',
         detail: 'GET /api/products/:id',
         search: 'GET /api/products/search',
+        categories: 'GET /api/products/meta/categories',
         recommendations: 'POST /api/products/recommendations',
         all: '/api/products/*'
       },
@@ -252,6 +269,8 @@ app.get('/', (req, res) => {
       architecture_pattern: 'Clean Routes with Enhanced Data',
       ready_for_frontend: true
     },
+    valid_skin_types: ['normal', 'dry', 'oily', 'combination'],
+    note: 'All ontology endpoints use TRUE semantic reasoning with SPARQL queries',
     ready_for_academic_demo: true,
     ready_for_frontend_integration: true,
     complete_system: true
@@ -406,6 +425,58 @@ app.post('/api/quiz/start', async (req, res) => {
     });
   }
 });
+
+// 4. Categories and Brands metadata endpoints
+app.get('/api/categories', async (req, res) => {
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/products/meta/categories`);
+    const data = await response.json();
+    
+    if (data.success) {
+      res.json({
+        success: true,
+        data: data.categories.map(cat => ({
+          name: cat.category,
+          product_count: cat.product_count || 0
+        }))
+      });
+    } else {
+      throw new Error('Failed to fetch categories');
+    }
+  } catch (error) {
+    console.error('❌ Categories endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load categories'
+    });
+  }
+});
+
+app.get('/api/brands', async (req, res) => {
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/products/meta/brands`);
+    const data = await response.json();
+    
+    if (data.success) {
+      res.json({
+        success: true,
+        data: data.brands.map(brand => ({
+          name: brand.brand,
+          product_count: brand.product_count || 0
+        }))
+      });
+    } else {
+      throw new Error('Failed to fetch brands');
+    }
+  } catch (error) {
+    console.error('❌ Brands endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load brands'
+    });
+  }
+});
+
 
 // Get quiz reference data
 app.get('/api/quiz/reference-data', async (req, res) => {
