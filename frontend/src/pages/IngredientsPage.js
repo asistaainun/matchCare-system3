@@ -1,3 +1,4 @@
+
 // frontend/src/pages/IngredientsPage.js
 // COMPLETE INGREDIENTS PAGE with Ontology Integration
 
@@ -14,6 +15,9 @@ const IngredientsPage = () => {
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
 
+  // ✅ FIXED: Correct API base URL
+  const API_BASE_URL = 'http://localhost:5000/api';
+
   // Categories for filtering
   const categories = [
     { key: 'all', label: 'All Ingredients', icon: '🔬' },
@@ -29,19 +33,25 @@ const IngredientsPage = () => {
     loadIngredients();
   }, []);
 
-  // Load ingredients from ontology
+  // ✅ FIXED: Load ingredients from correct backend
   const loadIngredients = async () => {
     setLoading(true);
     setError('');
 
     try {
-      console.log('🔍 Loading ingredients from ontology...');
+      console.log('🔍 Loading ingredients from backend...');
       
-      const response = await fetch('http://localhost:3001/api/ingredients?limit=100');
+      // ✅ FIXED: Correct endpoint
+      const response = await fetch(`${API_BASE_URL}/ingredients?limit=100`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
 
       if (data.success) {
-        console.log(`✅ Loaded ${data.data.length} ingredients from ontology`);
+        console.log(`✅ Loaded ${data.data.length} ingredients`);
         setIngredients(data.data);
       } else {
         throw new Error(data.message || 'Failed to load ingredients');
@@ -49,13 +59,13 @@ const IngredientsPage = () => {
 
     } catch (error) {
       console.error('❌ Ingredients loading error:', error);
-      setError(error.message);
+      setError(`Failed to load ingredients: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Search ingredients
+  // ✅ FIXED: Search ingredients with correct endpoint
   const handleSearch = async (searchValue) => {
     setSearchTerm(searchValue);
 
@@ -68,32 +78,42 @@ const IngredientsPage = () => {
     try {
       console.log(`🔍 Searching ingredients: "${searchValue}"`);
       
-      const response = await fetch(`http://localhost:3001/api/ingredients/search?q=${encodeURIComponent(searchValue)}&limit=50`);
+      // ✅ FIXED: Correct search endpoint
+      const response = await fetch(`${API_BASE_URL}/ontology/ingredients/search?q=${encodeURIComponent(searchValue)}&limit=50`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
 
       if (data.success) {
-        setIngredients(data.data);
+        setIngredients(data.data.results || data.data);
         console.log(`✅ Found ${data.data.length} ingredients matching "${searchValue}"`);
       }
 
     } catch (error) {
       console.error('❌ Search error:', error);
+      setError(`Search failed: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filter ingredients by category
+  // ✅ FIXED: Filter ingredients by category with correct field names
   const filteredIngredients = ingredients.filter(ingredient => {
     if (selectedCategory === 'all') return true;
     
-    const function_ = ingredient.function?.toLowerCase() || '';
-    const whatItDoes = ingredient.whatItDoes?.toLowerCase() || '';
+    const whatItDoes = ingredient.what_it_does?.toLowerCase() || '';
+    const actualFunctions = ingredient.actual_functions?.toLowerCase() || '';
+    const functions = ingredient.functions?.join(' ').toLowerCase() || '';
     
-    return function_.includes(selectedCategory) || whatItDoes.includes(selectedCategory);
+    return whatItDoes.includes(selectedCategory) || 
+       actualFunctions.includes(selectedCategory) ||
+       functions.includes(selectedCategory);
   });
 
-  // Show ingredient details modal
+  // ✅ FIXED: Show ingredient details with correct product endpoint
   const showIngredientDetails = async (ingredient) => {
     setSelectedIngredient(ingredient);
     
@@ -101,12 +121,15 @@ const IngredientsPage = () => {
     try {
       console.log(`🔍 Finding products with ingredient: ${ingredient.name}`);
       
-      const response = await fetch(`http://localhost:3001/api/products?search=${encodeURIComponent(ingredient.name)}&limit=6`);
-      const data = await response.json();
-
-      if (data.success) {
-        setRelatedProducts(data.data);
-        console.log(`✅ Found ${data.data.length} products with ${ingredient.name}`);
+      // ✅ FIXED: Correct products endpoint
+      const response = await fetch(`${API_BASE_URL}/products/search?ingredient=${encodeURIComponent(ingredient.name)}&limit=6`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setRelatedProducts(data.data.products || data.data);
+          console.log(`✅ Found ${data.data.length} products with ${ingredient.name}`);
+        }
       }
 
     } catch (error) {
@@ -183,7 +206,7 @@ const IngredientsPage = () => {
         {loading && (
           <div className="text-center py-12">
             <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading ingredients from ontology...</p>
+            <p className="text-gray-600">Loading ingredients from backend...</p>
           </div>
         )}
 
@@ -207,7 +230,7 @@ const IngredientsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredIngredients.map((ingredient, index) => (
               <div
-                key={index}
+                key={ingredient.id || index}
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => showIngredientDetails(ingredient)}
               >
@@ -218,10 +241,10 @@ const IngredientsPage = () => {
                   </h3>
 
                   {/* Function Badge */}
-                  {ingredient.function && (
+                  {ingredient.what_it_does && (
                     <div className="mb-3">
                       <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                        {ingredient.function}
+                        {ingredient.what_it_does.substring(0, 50)}...
                       </span>
                     </div>
                   )}
@@ -229,16 +252,37 @@ const IngredientsPage = () => {
                   {/* Benefit */}
                   {ingredient.benefit && (
                     <p className="text-gray-600 mb-3 line-clamp-2">
-                      <strong>Benefit:</strong> {ingredient.benefit}
+                      <strong>Benefit:</strong> {ingredient.benefit.substring(0, 100)}...
                     </p>
                   )}
 
-                  {/* What It Does */}
-                  {ingredient.whatItDoes && (
-                    <p className="text-gray-600 mb-4 line-clamp-2">
-                      <strong>Function:</strong> {ingredient.whatItDoes}
-                    </p>
+                  {/* Key Ingredient Badge */}
+                  {ingredient.is_key_ingredient && (
+                    <div className="mb-3">
+                      <span className="inline-block px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
+                        ⭐ Key Ingredient
+                      </span>
+                    </div>
                   )}
+
+                                    {/* Safety Badges */}
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {ingredient.pregnancy_safe && (
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">
+                        Pregnancy Safe
+                      </span>
+                    )}
+                    {ingredient.alcohol_free && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                        Alcohol Free
+                      </span>
+                    )}
+                    {ingredient.fragrance_free && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
+                        Fragrance Free
+                      </span>
+                    )}
+                  </div>
 
                   {/* Learn More Button */}
                   <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -283,9 +327,9 @@ const IngredientsPage = () => {
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{selectedIngredient.name}</h2>
-                {selectedIngredient.function && (
+                {selectedIngredient.what_it_does && (
                   <span className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                    {selectedIngredient.function}
+                    {selectedIngredient.what_it_does.substring(0, 50)}...
                   </span>
                 )}
               </div>
@@ -300,10 +344,10 @@ const IngredientsPage = () => {
             {/* Modal Content */}
             <div className="p-6 space-y-6">
               {/* What It Does */}
-              {selectedIngredient.whatItDoes && (
+              {selectedIngredient.what_it_does && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">What It Does</h3>
-                  <p className="text-gray-700">{selectedIngredient.whatItDoes}</p>
+                  <p className="text-gray-700">{selectedIngredient.what_it_does}</p>
                 </div>
               )}
 
@@ -331,12 +375,43 @@ const IngredientsPage = () => {
                 </div>
               )}
 
+              {/* Safety Badges in Modal */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3">Safety Profile</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.pregnancy_safe ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.pregnancy_safe ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Pregnancy Safe</div>
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.alcohol_free ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.alcohol_free ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Alcohol Free</div>
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.fragrance_free ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.fragrance_free ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Fragrance Free</div>
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.paraben_free ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.paraben_free ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Paraben Free</div>
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.sulfate_free ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.sulfate_free ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Sulfate Free</div>
+                  </div>
+                  <div className={`p-3 rounded-lg text-center ${selectedIngredient.silicone_free ? 'bg-pink-100 text-pink-700' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className="text-2xl mb-1">{selectedIngredient.silicone_free ? '✅' : '❓'}</div>
+                    <div className="text-sm font-medium">Silicone Free</div>
+                  </div>
+                </div>
+              </div>
+
               {/* Alternative Names */}
-              {selectedIngredient.alternativeNames && (
+              {selectedIngredient.alternative_names && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Also Known As</h3>
                   <div className="flex flex-wrap gap-2">
-                    {selectedIngredient.alternativeNames.split(',').map((name, index) => (
+                    {selectedIngredient.alternative_names.split(',').map((name, index) => (
                       <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
                         {name.trim()}
                       </span>

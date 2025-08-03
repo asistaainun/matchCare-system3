@@ -13,121 +13,19 @@ const pool = new Pool({
 });
 
 // ===== 1. GET ALL INGREDIENTS (Ontology-powered) =====
+
+// Ganti bagian router.get('/', async (req, res) => { ... }) dengan:
 router.get('/', async (req, res) => {
   try {
-    const { limit = 50, offset = 0, search, skinType } = req.query;
+    const { limit = 50, offset = 0, search, skinType, category } = req.query;
 
-    console.log('🧠 Getting ingredients from ontology...');
-
-    // Get ingredients from ontology first
-    const ontologyIngredients = await ontologyService.getAllIngredients(parseInt(limit) + 20);
-    
-    let ingredients = ontologyIngredients.data || [];
-
-    // Apply search filter
-    if (search) {
-      const searchLower = search.toLowerCase();
-      ingredients = ingredients.filter(ingredient => 
-        ingredient.name.toLowerCase().includes(searchLower) ||
-        (ingredient.benefit && ingredient.benefit.toLowerCase().includes(searchLower)) ||
-        (ingredient.function && ingredient.function.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Apply skin type filter
-    if (skinType) {
-      console.log(`🎯 Filtering ingredients for ${skinType} skin type...`);
-      try {
-        const skinTypeIngredients = await ontologyService.getSkinTypeRecommendations(skinType);
-        const recommendedNames = skinTypeIngredients.data.map(ing => ing.name.toLowerCase());
-        
-        // Prioritize skin type specific ingredients
-        ingredients = ingredients.sort((a, b) => {
-          const aRecommended = recommendedNames.includes(a.name.toLowerCase());
-          const bRecommended = recommendedNames.includes(b.name.toLowerCase());
-          
-          if (aRecommended && !bRecommended) return -1;
-          if (!aRecommended && bRecommended) return 1;
-          return 0;
-        });
-      } catch (error) {
-        console.warn('Skin type filtering failed:', error.message);
-      }
-    }
-
-    // Apply pagination
-    const startIndex = parseInt(offset);
-    const endIndex = startIndex + parseInt(limit);
-    const paginatedIngredients = ingredients.slice(startIndex, endIndex);
-
-    // Enhance with additional ontology data
-    const enhancedIngredients = await Promise.all(
-      paginatedIngredients.map(async (ingredient) => {
-        try {
-          // Get detailed information from ontology
-          const details = await ontologyService.getIngredientDetails(ingredient.name);
-          
-          return {
-            ...ingredient,
-            detailed_info: details.data[0] || null,
-            ontology_powered: true
-          };
-        } catch (error) {
-          return {
-            ...ingredient,
-            detailed_info: null,
-            ontology_powered: false
-          };
-        }
-      })
-    );
-
-    res.json({
-      success: true,
-      data: enhancedIngredients,
-      pagination: {
-        total: ingredients.length,
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        has_more: endIndex < ingredients.length
-      },
-      filters: {
-        search,
-        skinType
-      },
-      ontology_powered: true,
-      source: ontologyIngredients.source || 'sparql',
-      message: `Retrieved ${enhancedIngredients.length} ingredients from ontology`
-    });
-
-  } catch (error) {
-    console.error('❌ Ingredients listing error:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message,
-      ontology_powered: false
-    });
-  }
-});
-
-// ===== 6. INGREDIENT SEARCH (Ontology-enhanced) =====
-
-router.get('/search', async (req, res) => {
-  try {
-    const { q, limit = 20 } = req.query;
-    
-    if (!q || q.trim().length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: 'Search query must be at least 2 characters'
-      });
-    }
+    console.log('🧪 Getting ingredients from database first...');
 
     const client = await pool.connect();
     
     try {
-      // ✅ QUERY YANG SESUAI DENGAN SCHEMA DATABASE
-      const dbQuery = `
+      // Build the query with proper filtering
+      let baseQuery = `
         SELECT 
           i.id,
           i.name,
@@ -149,97 +47,158 @@ router.get('/search', async (req, res) => {
           i.addresses_concerns,
           i.provided_benefits,
           i.sensitivities,
+          i.alternative_names,
           'database' as source
         FROM ingredients i
-        WHERE 
-          i.is_active = true
-          AND (
-            LOWER(i.name) LIKE LOWER($1) 
-            OR LOWER(i.description) LIKE LOWER($1)
-            OR LOWER(i.what_it_does) LIKE LOWER($1)
-            OR LOWER(i.explanation) LIKE LOWER($1)
-            OR LOWER(i.benefit) LIKE LOWER($1)
-            OR LOWER(i.alternative_names) LIKE LOWER($1)
-          )
-        ORDER BY 
-          CASE WHEN LOWER(i.name) LIKE LOWER($2) THEN 1 ELSE 2 END,
-          LENGTH(i.name),
-          i.name
-        LIMIT $3
+        WHERE i.is_active = true
       `;
+
+      const queryParams = [];
+      let paramCount = 0;
+
+      // Add search filter
+      if (search && search.trim()) {
+        paramCount++;
+        baseQuery += ` AND (
+          LOWER(i.name) LIKE LOWER($${paramCount}) 
+          OR LOWER(i.description) LIKE LOWER($${paramCount})
+          OR LOWER(i.what_it_does) LIKE LOWER($${paramCount})
+          OR LOWER(i.explanation) LIKE LOWER($${paramCount})
+        )`;
+        queryParams.push(`%${search.trim()}%`);
+      }
+
+      // Add category filter
+      if (category && category !== 'all') {
+        paramCount++;
+        baseQuery += ` AND LOWER(i.functional_categories) LIKE LOWER($${paramCount})`;
+        queryParams.push(`%${category}%`);
+      }
+
+      // Add ordering and pagination
+      baseQuery += ` ORDER BY i.is_key_ingredient DESC, i.name ASC`;
       
-      const searchTerm = `%${q.trim()}%`;
-      const exactTerm = `${q.trim()}%`;
+      paramCount++;
+      baseQuery += ` LIMIT $${paramCount}`;
+      queryParams.push(parseInt(limit));
       
-      const result = await client.query(dbQuery, [searchTerm, exactTerm, limit]);
+      paramCount++;
+      baseQuery += ` OFFSET $${paramCount}`;
+      queryParams.push(parseInt(offset));
+
+      console.log('🔍 Executing database query...');
+      const result = await client.query(baseQuery, queryParams);
+      console.log(`📊 Found ${result.rowCount} active ingredients in database`);
       
-      // Format hasil sesuai dengan struktur yang diharapkan
-      const formattedResults = result.rows.map(ingredient => ({
-        id: ingredient.id,
-        name: ingredient.name,
-        description: ingredient.description || ingredient.what_it_does,
-        benefits: ingredient.benefit || ingredient.provided_benefits,
-        functions: ingredient.actual_functions,
+      // Get total count
+      let countQuery = `SELECT COUNT(*) FROM ingredients i WHERE i.is_active = true`;
+      const countParams = [];
+      let countParamCount = 0;
+
+      if (search && search.trim()) {
+      countParamCount++;
+      countQuery += ` AND (
+        LOWER(i.name) LIKE LOWER($${countParamCount}) 
+        OR LOWER(i.description) LIKE LOWER($${countParamCount})
+        OR LOWER(i.what_it_does) LIKE LOWER($${countParamCount})
+        OR LOWER(i.explanation) LIKE LOWER($${countParamCount})
+      )`;
+      countParams.push(`%${search.trim()}%`);
+      }
+
+      if (category && category !== 'all') {
+        countParamCount++;
+        countQuery += ` AND LOWER(i.functional_categories) LIKE LOWER($${countParamCount})`;
+        countParams.push(`%${category}%`);
+      }
+
+      const countResult = await pool.query(countQuery, countParams);
+      const totalCount = parseInt(countResult.rows[0].count);
+    
+      // Format results
+      const ingredients = result.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description || row.what_it_does,
+        benefit: row.benefit || row.provided_benefits,
+        function: row.actual_functions,
+        is_key_ingredient: row.is_key_ingredient,
         safety_info: {
-          pregnancy_safe: ingredient.pregnancy_safe,
-          alcohol_free: ingredient.alcohol_free,
-          fragrance_free: ingredient.fragrance_free,
-          silicone_free: ingredient.silicone_free,
-          sulfate_free: ingredient.sulfate_free,
-          paraben_free: ingredient.paraben_free,
-          safety_notes: ingredient.safety
+          pregnancy_safe: row.pregnancy_safe,
+          alcohol_free: row.alcohol_free,
+          fragrance_free: row.fragrance_free,
+          silicone_free: row.silicone_free,
+          sulfate_free: row.sulfate_free,
+          paraben_free: row.paraben_free
         },
-        skin_compatibility: {
-          suitable_for: ingredient.suitable_for_skin_types,
-          addresses_concerns: ingredient.addresses_concerns,
-          sensitivities: ingredient.sensitivities
-        },
-        is_key_ingredient: ingredient.is_key_ingredient,
-        source: ingredient.source
+        source: 'database'
       }));
+
       
-      // Try ontology search if database results are limited
-      let ontologyResults = [];
-      if (result.rows.length < 5) {
+      // If no results from database, try ontology
+      if (ingredients.length === 0) {
+        console.log('📡 No database results, trying ontology...');
         try {
-          const ontologyData = await ontologyService.searchIngredients(q, limit - result.rows.length);
-          ontologyResults = ontologyData.data || [];
+          const ontologyIngredients = await ontologyService.getAllIngredients(parseInt(limit));
+          const ontologyData = ontologyIngredients.data || [];
+          
+          res.json({
+            success: true,
+            data: ontologyData,
+            pagination: {
+              total: ontologyData.length,
+              limit: parseInt(limit),
+              offset: parseInt(offset),
+              has_more: false
+            },
+            source: 'ontology',
+            message: `Retrieved ${ontologyData.length} ingredients from ontology`
+          });
+          return;
         } catch (ontologyError) {
-          console.warn('Ontology search failed:', ontologyError.message);
+          console.warn('Ontology fallback failed:', ontologyError.message);
         }
       }
-      
-      const combinedResults = [
-        ...formattedResults,
-        ...ontologyResults.map(item => ({
-          ...item,
-          source: 'ontology'
-        }))
-      ];
-      
+
       res.json({
         success: true,
-        query: q,
-        total: combinedResults.length,
-        ingredients: combinedResults,
-        sources: {
-          database: formattedResults.length,
-          ontology: ontologyResults.length
+        data: ingredients,
+        pagination: {
+          total: ingredients.length,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          hasMore: (parseInt(offset) + result.rows.length) < totalCount
         },
-        algorithm_type: 'HYBRID_INGREDIENT_SEARCH'
+        filters: { search, skinType, category },
+        source: 'database',
+        message: `Retrieved ${ingredients.length} ingredients from database`
       });
-      
+
     } finally {
       client.release();
     }
-    
+
   } catch (error) {
-    console.error('❌ Ingredient search error:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Search failed',
-      message: error.message
-    });
+    console.error('❌ Ingredients listing error:', error);
+    
+    // Fallback to ontology
+    try {
+      console.log('🔄 Database failed, using ontology fallback...');
+      const ontologyIngredients = await ontologyService.getAllIngredients(parseInt(req.query.limit || 50));
+      
+      res.json({
+        success: true,
+        data: ontologyIngredients.data || [],
+        source: 'ontology_fallback',
+        message: 'Using ontology data due to database error'
+      });
+    } catch (fallbackError) {
+      res.status(500).json({ 
+        success: false, 
+        error: 'Both database and ontology failed',
+        details: error.message
+      });
+    }
   }
 });
 
@@ -895,5 +854,23 @@ router.generateConflictWarnings = function(conflicts) {
     recommendation: 'Use separately or under professional guidance'
   }));
 };
+
+
+// Tambah di akhir file sebelum module.exports:
+router.testDatabaseConnection = async function() {
+  try {
+    const client = await pool.connect();
+    const result = await client.query('SELECT COUNT(*) FROM ingredients WHERE is_active = true');
+    client.release();
+    console.log(`✅ Database connected: ${result.rows[0].count} active ingredients found`);
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    return false;
+  }
+};
+
+// Test connection on startup
+router.testDatabaseConnection();
 
 module.exports = router;

@@ -43,8 +43,9 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined'));
 }
 
-// Static files for images
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+// Static files for images - FIXED PATH
+app.use('/images', express.static(path.join(__dirname, '../frontend/public/images')));
+app.use('/static', express.static(path.join(__dirname, '../frontend/public')));
 
 // Request logging with better formatting
 app.use((req, res, next) => {

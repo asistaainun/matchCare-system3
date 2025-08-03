@@ -88,16 +88,17 @@ router.get('/', async (req, res) => {
       
       // FIX: Concerns filtering with proper NULL handling and array safety
       if (concernsArray.length > 0) {
-        const concernConditions = concernsArray.map(concern => {
-          const condition = `(
-            p.addresses_concerns IS NOT NULL AND 
-            array_length(p.addresses_concerns, 1) > 0 AND
-            $${paramIndex} = ANY(p.addresses_concerns)
-          )`;
-          queryParams.push(concern);
-          paramIndex++;
+        const concernConditions = concernsArray.map((concern, index) => {
+          const condition = `$${paramIndex + index} = ANY(p.addresses_concerns)`;
           return condition;
         });
+        
+        // Add all concern parameters
+        concernsArray.forEach(concern => {
+          queryParams.push(concern);
+          paramIndex++;
+        });
+        
         whereConditions.push(`(${concernConditions.join(' OR ')})`);
       }
       
@@ -374,12 +375,18 @@ router.get('/:id', async (req, res) => {
             i.actual_functions,
             i.embedded_functions,
             i.functional_categories,
-            i.key_ingredient_types,
             i.is_key_ingredient,
-            i.suitable_for_skin_types,
-            i.addresses_concerns,
-            i.provided_benefits,
-            i.sensitivities,
+            i.what_it_does,
+            i.benefit,
+            i.explanation,
+            i.safety,
+            i.usage_instructions,
+            i.pregnancy_safe,
+            i.alcohol_free,
+            i.fragrance_free,
+            i.silicone_free,
+            i.sulfate_free,
+            i.paraben_free,
             pi.is_key_ingredient as product_key_ingredient,
             pi.position
           FROM product_ingredients pi
@@ -419,13 +426,22 @@ router.get('/:id', async (req, res) => {
         },
         ingredients: ingredients.map(ing => ({
           name: ing.name,
+          what_it_does: ing.what_it_does,
           functions: ing.actual_functions ? ing.actual_functions.split(',') : [],
           categories: ing.functional_categories ? ing.functional_categories.split(',') : [],
-          is_key: ing.product_key_ingredient || ing.is_key_ingredient === 'true',
-          benefits: ing.provided_benefits ? ing.provided_benefits.split(',') : [],
-          suitable_for: ing.suitable_for_skin_types ? ing.suitable_for_skin_types.split(',') : [],
-          addresses: ing.addresses_concerns ? ing.addresses_concerns.split(',') : [],
-          sensitivities: ing.sensitivities ? ing.sensitivities.split(',') : [],
+          is_key: ing.product_key_ingredient || ing.is_key_ingredient,
+          benefit: ing.benefit,
+          explanation: ing.explanation,
+          safety: ing.safety,
+          usage_instructions: ing.usage_instructions,
+          safety_flags: {
+            pregnancy_safe: ing.pregnancy_safe,
+            alcohol_free: ing.alcohol_free,
+            fragrance_free: ing.fragrance_free,
+            silicone_free: ing.silicone_free,
+            sulfate_free: ing.sulfate_free,
+            paraben_free: ing.paraben_free
+          },
           position: ing.position
         })),
         bpom_number: product.bpom_number,
