@@ -587,6 +587,8 @@ app.post('/api/quiz/submit', async (req, res) => {
     const fragrance_sensitivity = sensitivities.includes('fragrance');
     const alcohol_sensitivity = sensitivities.includes('alcohol'); 
     const silicone_sensitivity = sensitivities.includes('silicone');
+    const paraben_sensitivity = sensitivities.includes('paraben');
+    const sulfate_sensitivity = sensitivities.includes('sulfate');
 
     // Insert quiz result
     const result = await client.query(`
@@ -597,9 +599,11 @@ app.post('/api/quiz/submit', async (req, res) => {
         fragrance_sensitivity, 
         alcohol_sensitivity, 
         silicone_sensitivity,
+        paraben_sensitivity,
+        sulfate_sensitivity,
         completed_at,
         created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
       RETURNING id, completed_at
     `, [
       session_id,
@@ -607,7 +611,9 @@ app.post('/api/quiz/submit', async (req, res) => {
       concern_ids,
       fragrance_sensitivity,
       alcohol_sensitivity,
-      silicone_sensitivity
+      silicone_sensitivity,
+      paraben_sensitivity,
+      sulfate_sensitivity
     ]);
 
     await client.query('COMMIT');
@@ -617,12 +623,13 @@ app.post('/api/quiz/submit', async (req, res) => {
     res.json({
       success: true,
       data: {
-        quiz_id: quizResult.id,
+        quiz_id: result.rows[0].id,
         session_id: session_id,
+        completed_at: result.rows[0].completed_at,
         skin_type: skin_type,
         concerns: concerns,
         sensitivities: sensitivities,
-        completed_at: quizResult.completed_at
+        ontology_ready: true
       },
       message: 'Quiz submitted successfully - ready for ontology-based analysis'
     });

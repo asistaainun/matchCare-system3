@@ -83,20 +83,49 @@ router.post('/submit', async (req, res) => {
     // Store quiz result in database (for analytics)
     const client = await pool.connect();
     try {
+      // Convert skin_type string to skin_type_id
+      const skinTypeQuery = await client.query(
+        'SELECT id FROM skin_types WHERE name = $1', 
+        [skin_type.toLowerCase()]
+      );
+      const skinTypeId = skinTypeQuery.rows[0]?.id || 1;
+
+      // Convert concerns array to concern_ids
+      const concernIds = [];
+      if (concerns.length > 0) {
+        const concernQuery = await client.query(
+          'SELECT id FROM skin_concerns WHERE name = ANY($1)', 
+          [concerns.map(c => c.toLowerCase())]
+        );
+        concernIds.push(...concernQuery.rows.map(row => row.id));
+      }
+
+      // Extract sensitivity booleans
+      const fragranceSensitive = sensitivities.includes('fragrance');
+      const alcoholSensitive = sensitivities.includes('alcohol');
+      const siliconeSensitive = sensitivities.includes('silicone');
+      const parabenSensitive = sensitivities.includes('paraben');
+      const sulfateSensitive = sensitivities.includes('sulfate');
+
       const insertQuery = `
         INSERT INTO quiz_results (
-          session_id, skin_type, concerns, sensitivities, 
+          session_id, skin_type_id, concern_ids, 
+          fragrance_sensitivity, alcohol_sensitivity, silicone_sensitivity,
           completed_at, created_at
-        ) VALUES ($1, $2, $3, $4, NOW(), NOW())
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
         RETURNING id
       `;
       
       const sessionId = req.body.session_id || uuidv4();
       const result = await client.query(insertQuery, [
         sessionId,
-        skin_type.toLowerCase(),
-        JSON.stringify(concerns),
-        JSON.stringify(sensitivities)
+        skinTypeId,
+        concernIds,
+        fragranceSensitive,
+        alcoholSensitive,
+        siliconeSensitive,
+        parabenSensitive,
+        sulfateSensitive
       ]);
 
       console.log('✅ Quiz result saved to database:', result.rows[0].id);
@@ -123,7 +152,7 @@ router.post('/submit', async (req, res) => {
         sensitivities,
         recommendations_count: recommendations.length
       },
-      recommendations: recommendations.slice(0, 20), // Limit initial results
+      recommendations: recommendations.slice(0, 20),
       next_steps: {
         view_all_products: `/products?skin_type=${skin_type.toLowerCase()}&concerns=${concerns.join(',')}&ontology=true`,
         get_more_recommendations: '/api/ontology/recommendations'

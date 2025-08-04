@@ -44,6 +44,8 @@ const QuizPage = () => {
     { id: 'fragrance', label: 'Fragrance', desc: 'Perfumes and essential oils' },
     { id: 'alcohol', label: 'Alcohol', desc: 'Denatured alcohol in products' },
     { id: 'silicone', label: 'Silicone', desc: 'Dimethicone and similar compounds' },
+    { id: 'paraben', label: 'Paraben', desc: 'Preservatives like methylparaben' },
+    { id: 'sulfate', label: 'Sulfate', desc: 'Sodium lauryl sulfate and similar' },
     { id: 'none', label: 'No known sensitivities', desc: 'I can use most ingredients safely' }
   ];
 
