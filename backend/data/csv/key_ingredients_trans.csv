@@ -1,0 +1,16 @@
+﻿name,slug,display_name,category,ontology_uri,description
+AHA,aha,Alpha Hydroxy Acids,acids,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/AHA,Asam yang larut dalam air yang digunakan untuk mengangkat sel kulit mati. Cocok untuk kulit sensitif dan membantu mencerahkan kulit.
+BHA,bha,Beta Hydroxy Acids,acids,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/BHA,Asam yang larut dalam minyak yang membantu membersihkan pori-pori dan mengatasi jerawat. Cocok untuk kulit berminyak.
+PHA,pha,Polyhydroxy Acids,acids,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/PHA,"Asam yang lembut untuk kulit sensitif, membantu mengangkat sel kulit mati tanpa iritasi."
+Vitamin C,vitamin-c,Vitamin C,vitamins,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/VitaminC,Vitamin yang berfungsi untuk mencerahkan kulit dan melindungi dari radikal bebas.
+Vitamin E,vitamin-e,Vitamin E,vitamins,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/VitaminE,Vitamin yang berfungsi sebagai antioksidan dan menjaga kelembapan kulit.
+Niacinamide,niacinamide,Niacinamide (Vitamin B3),vitamins,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Niacinamide,Vitamin B3 untuk mengontrol minyak dan mengecilkan pori-pori kulit.
+Retinoids,retinoids,Retinoids,actives,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Retinoids,Turunan vitamin A yang membantu mengurangi tanda penuaan dan meremajakan kulit.
+Hyaluronic Acid,hyaluronic-acid,Hyaluronic Acid,moisturizers,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/HyaluronicAcid,Pelembap yang kuat untuk menjaga hidrasi kulit.
+Ceramides,ceramides,Ceramides,moisturizers,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Ceramides,Lipid yang memperbaiki lapisan pelindung kulit dan menjaga kelembapan.
+Peptides,peptides,Peptides,actives,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Peptides,Rantai asam amino yang membantu anti-penuaan dan regenerasi kulit.
+Antioxidants,antioxidants,Antioxidants,actives,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Antioxidants,Senyawa pelindung dari radikal bebas yang merusak kulit.
+Panthenol,panthenol,Panthenol (Pro-Vitamin B5),vitamins,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Panthenol,Bahan yang menenangkan dan melembapkan kulit.
+Chemical UV Filter,chemical-uv-filter,Chemical Sunscreen,sun_protection,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/ChemicalUVFilter,Bahan kimia yang melindungi dari paparan sinar UV.
+Mineral UV Filter,mineral-uv-filter,Mineral Sunscreen,sun_protection,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/MineralUVFilter,Bahan pelindung fisik yang menghalau sinar UV.
+Exfoliators,exfoliators,Exfoliators,actives,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Exfoliators,Bahan eksfoliasi fisik dan kimia untuk mengangkat sel kulit mati.

@@ -1,0 +1,5 @@
+﻿name,description,ontology_uri
+Normal,"Kulit yang tidak terlalu kering atau berminyak, terasa nyaman.",http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Normal
+Dry,"Kulit yang terasa kering, sering mengelupas, dan tidak lembab.",http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Dry
+Oily,"Kulit yang mengeluarkan minyak berlebih, terutama di zona T.",http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Oily
+Combination,Kulit yang memiliki kombinasi antara area kering dan berminyak.,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Combination

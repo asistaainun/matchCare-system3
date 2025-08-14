@@ -1,0 +1,36 @@
+﻿name,ontology_uri,description,parent_id
+Cleanser,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Cleanser,"Produk untuk membersihkan wajah dari kotoran, minyak, dan sisa makeup.",
+Eye Care,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/EyeCare,"Produk perawatan khusus untuk area sekitar mata, seperti krim atau serum.",
+Lip Care,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/LipCare,"Produk untuk merawat bibir, seperti lip balm atau lip scrub.",
+Moisturizer,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Moisturizer,Produk untuk melembapkan kulit dan menjaga keseimbangan kelembapan.,
+Other,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Other,Kategori produk lainnya yang tidak termasuk dalam kategori spesifik.,
+Set/Kit,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/SetKit,"Produk yang terdiri dari beberapa item dalam satu paket, seperti set perawatan kulit.",
+Suncare,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Suncare,"Produk perawatan untuk melindungi kulit dari paparan sinar UV, seperti sunscreen.",
+Treatment,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Treatment,"Produk yang dirancang untuk perawatan khusus, seperti serum atau ampoules.",
+Cleansing Balm,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/CleansingBalm,Balm pembersih yang digunakan untuk menghapus makeup dan kotoran dengan lembut.,1
+Cleansing Cream,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/CleansingCream,Krim pembersih wajah yang membersihkan tanpa mengeringkan kulit.,1
+Cleansing Oil,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/CleansingOil,Minyak pembersih untuk mengangkat makeup dan kotoran dari kulit.,1
+Cleansing Wipes,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/CleansingWipes,Tisu pembersih yang praktis digunakan untuk membersihkan wajah di perjalanan.,1
+Face Wash,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/FaceWash,Sabun wajah yang membantu mengangkat kotoran dan minyak berlebih.,1
+Make Up Remover,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/MakeUpRemover,Produk yang dirancang untuk menghapus makeup secara efektif.,1
+Micellar Water,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/MicellarWater,Air pembersih yang mengandung micelles untuk menarik kotoran dan makeup tanpa membilas.,1
+Eye Cream,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/EyeCream,Krim perawatan khusus untuk area mata yang dapat mengurangi kantung mata dan garis halus.,2
+Eye Mask,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/EyeMask,Masker mata untuk menenangkan dan mengurangi pembengkakan.,2
+Eye Serum,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/EyeSerum,Serum perawatan mata yang membantu mengurangi lingkaran hitam dan kerutan.,2
+Eyelash Serum,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/EyelashSerum,Serum untuk merangsang pertumbuhan bulu mata.,2
+Lip Mask,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/LipMask,Masker bibir untuk menghidrasi dan merawat bibir kering.,3
+Lip Balm,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/LipBalm,Balm bibir untuk melembapkan bibir yang kering.,3
+Lip Scrub,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/LipScrub,Scrub bibir untuk mengangkat sel kulit mati dan menjaga bibir tetap lembut.,3
+Lip Serum,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/LipSerum,Serum bibir yang merawat dan memberi kelembapan ekstra pada bibir.,3
+Cream Or Lotion,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/CreamOrLotion,Krim atau lotion untuk merawat dan melembapkan kulit.,4
+Face Mist,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/FaceMist,Semprotan wajah untuk memberi hidrasi cepat dan menyegarkan kulit.,4
+Face Oil,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/FaceOil,Minyak wajah yang melembapkan dan memberi nutrisi tambahan pada kulit.,4
+Gel,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Gel,Gel pelembap yang ringan dan mudah menyerap ke dalam kulit.,4
+Acne Treatment,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/AcneTreatment,Perawatan khusus untuk mengatasi jerawat dan bekasnya.,8
+Ampoules,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Ampoules,Produk konsentrat yang mengandung bahan aktif untuk perawatan kulit intensif.,8
+Essence,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Essence,Essence untuk memberi kelembapan dan menyegarkan kulit.,8
+Face Mask,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/FaceMask,Masker wajah yang memberikan perawatan kulit secara menyeluruh.,8
+Peeling,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Peeling,Produk eksfoliasi yang mengangkat sel kulit mati dan memperbaiki tekstur kulit.,8
+Scrub Or Exfoliator,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/ScrubOrExfoliator,Scrub atau eksfoliator untuk membersihkan kulit dari sel kulit mati.,8
+Serum,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Serum,Serum dengan bahan aktif untuk perawatan intensif pada kulit.,8
+Toner,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Toner,Toner untuk menyeimbangkan pH kulit setelah pembersihan.,8

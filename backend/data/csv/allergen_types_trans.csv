@@ -1,0 +1,7 @@
+﻿name,ontology_uri,description
+fragrance,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Fragrance,Fragrance buatan atau alami yang digunakan untuk memberikan aroma pada produk.
+alcohol,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Alcohol,Alkohol pengering seperti etanol yang dapat menyebabkan kekeringan pada kulit.
+paraben,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Paraben,"Pengawet yang mengandung akhiran -paraben, dapat menyebabkan iritasi pada beberapa orang."
+silicone,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Silicone,Bahan berbasis silikon yang digunakan untuk memberi kelembutan pada produk perawatan kulit.
+sulfate,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/Sulfate,Surfaktan berbasis sulfat yang dapat mengeringkan kulit bagi beberapa orang.
+no_known_sensitivities,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/NoKnownSensitivities,Tidak ada alergi atau sensitivitas yang diketahui terhadap bahan tertentu.

@@ -1,0 +1,6 @@
+﻿name,ontology_uri,excludes_allergen_type_id,description
+fragrance_free,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/FragranceFree,1,"Produk yang bebas dari bahan pewangi, baik alami maupun sintetis."
+alcohol_free,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/AlcoholFree,2,Produk yang tidak mengandung alkohol pengering seperti etanol.
+paraben_free,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/ParabenFree,3,Produk yang bebas dari pengawet berbasis paraben yang dapat menyebabkan iritasi pada kulit sensitif.
+silicone_free,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/SiliconeFree,4,Produk yang tidak mengandung silikon yang dapat menutupi pori-pori.
+sulfate_free,http://www.semanticweb.org/msilaptop/ontologies/2025/4/skincareOntology/SulfateFree,5,"Produk yang bebas dari sulfat, yang dapat mengeringkan kulit dan menyebabkan iritasi."
