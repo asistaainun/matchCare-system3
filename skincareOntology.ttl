@@ -49,6 +49,8 @@ sc:potentiatesEffectOf
 
 sc:MineralUVFilter  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label         "Mineral UV Filter";
+        sc:hasFunction     sc:UVFilter;
+        sc:providesIngredientBenefit sc:Protecting;
         sc:recommendedFor  sc:Oily .
 
 sc:belongsToBrand  rdf:type  owl:ObjectProperty;
@@ -78,7 +80,7 @@ sc:AHA  rdf:type                      owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label                    "Alpha Hydroxy Acid";
         sc:hasFunction                sc:Exfoliant;
         sc:incompatibleWith           sc:Retinoid , sc:BHA;
-        sc:providesIngredientBenefit  sc:GoodForTexture , sc:Brightening;
+        sc:providesIngredientBenefit  sc:GoodForTexture , sc:Brightening , sc:Exfoliating;
         sc:recommendedFor             sc:Oily , sc:Normal , sc:Combination .
 
 sc:Chelating  rdf:type  owl:NamedIndividual , sc:Function .
@@ -132,7 +134,7 @@ sc:AscorbicAcidIngredient
         sc:hasFunction                sc:Masking , sc:SkinConditioning , sc:Antioxidant;
         sc:incompatibleWith           sc:RetinolIngredient;
         sc:pregnancySafe              true;
-        sc:providesIngredientBenefit  sc:AntiAging , sc:BarrierRepair , sc:Brightening;
+        sc:providesIngredientBenefit  sc:HelpsWithAntiAging , sc:BarrierRepair , sc:Brightening;
         sc:recommendedFor             sc:Normal , sc:Dry;
         sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:VitaminE;
         sc:treatsConcern              sc:FineLines , sc:DarkSpots;
@@ -182,7 +184,7 @@ sc:VitaminC  rdf:type                 owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label                    "Vitamin C";
         sc:hasFunction                sc:Antioxidant;
         sc:incompatibleWith           sc:Retinoid , sc:SalicylicAcidIngredient;
-        sc:providesIngredientBenefit  sc:Brightening , sc:HelpsWithDarkSpots;
+        sc:providesIngredientBenefit  sc:Brightening , sc:HelpsWithDarkSpots , sc:Protecting;
         sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
         sc:synergisticWith            sc:VitaminE;
         sc:treatsConcern              sc:DarkSpots .
@@ -220,7 +222,7 @@ sc:SalicylicAcidIngredient
         sc:incompatibleWith           sc:Retinoid , sc:VitaminC , sc:RetinolIngredient;
         sc:isKeyIngredientType        sc:KeyIngredient;
         sc:pregnancySafe              false;
-        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter , sc:OilControl , sc:Hydrating;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter , sc:OilControl , sc:Hydrating , sc:Exfoliating;
         sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
         sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:NiacinamideIngredient , sc:Niacinamide;
         sc:treatsConcern              sc:Dryness , sc:Acne;
@@ -333,6 +335,7 @@ sc:VitaminE  rdf:type       owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label          "Vitamin E";
         sc:hasFunction      sc:Antioxidant;
         sc:recommendedFor   sc:Combination;
+        sc:providesIngredientBenefit sc:Protecting;
         sc:synergisticWith  sc:VitaminC .
 
 sc:Benefit  rdf:type  owl:Class;
@@ -454,10 +457,10 @@ sc:GlycolicAcidIngredient
         sc:hasFunction                sc:Exfoliant , sc:Buffering;
         sc:incompatibleWith           sc:RetinolIngredient;
         sc:pregnancySafe              false;
-        sc:providesIngredientBenefit  sc:TextureImprovement , sc:Brightening;
+        sc:providesIngredientBenefit  sc:GoodForTexture , sc:Brightening , sc:Exfoliating;
         sc:recommendedFor             sc:Oily , sc:Normal;
         sc:synergisticWith            sc:HyaluronicAcidIngredient , sc:NiacinamideIngredient;
-        sc:treatsConcern              sc:Texture , sc:Hyperpigmentation;
+        sc:treatsConcern              sc:Texture , sc:DarkSpots;
         sc:usageInstructions          "Apply 2-3 times a week, preferably in the evening. Always follow with SPF" .
 
 sc:Alcohol  rdf:type  sc:AllergenType , owl:NamedIndividual .
@@ -491,10 +494,10 @@ sc:RetinolIngredient  rdf:type        owl:NamedIndividual , sc:Ingredient;
         sc:alcoholFree                true;
         sc:explanation                "Retinol is a gold-standard ingredient for anti-aging. It is a form of Vitamin A and belongs to the class of retinoids that also includes tretinoin. Retinol has numerous benefits including increasing cell turnover, reducing wrinkles, and improving skin texture.";
         sc:fragranceFree              true;
-        sc:hasFunction                sc:AntiAging , sc:Exfoliant , sc:SkinConditioning , sc:Moisturizing;
+        sc:hasFunction                sc:HelpsWithAntiAging , sc:Exfoliant , sc:SkinConditioning , sc:Moisturizing;
         sc:incompatibleWith           sc:AscorbicAcidIngredient , sc:SalicylicAcidIngredient , sc:GlycolicAcidIngredient;
         sc:pregnancySafe              false;
-        sc:providesIngredientBenefit  sc:AntiAging , sc:TextureImprovement , sc:Hydrating;
+        sc:providesIngredientBenefit  sc:HelpsWithAntiAging , sc:GoodForTexture , sc:Hydrating;
         sc:recommendedFor             sc:Normal , sc:Dry;
         sc:synergisticWith            sc:NiacinamideIngredient , sc:CeramideIngredient;
         sc:treatsConcern              sc:Wrinkles , sc:FineLines;
@@ -547,11 +550,15 @@ sc:LipCare  rdf:type     owl:Class;
 sc:Combination  rdf:type  sc:SkinType , owl:NamedIndividual .
 
 sc:ChemicalUVFilter  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
-        rdfs:label  "Chemical UV Filter" .
+        rdfs:label  "Chemical UV Filter";
+        sc:hasFunction  sc:UVFilter;
+        sc:providesIngredientBenefit  sc:Protecting .
 
 sc:Panthenol  rdf:type  owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label      "Panthenol";
-        sc:hasFunction  sc:Soothing .
+        sc:hasFunction  sc:Soothing;
+        sc:providesIngredientBenefit sc:Soothing, sc:ReducesIrritation .
+
 
 sc:FormulationTrait  rdf:type  owl:Class;
         rdfs:label  "Formulation Trait" .
@@ -562,15 +569,15 @@ sc:alcoholFree  rdf:type  owl:DatatypeProperty;
 
 sc:HyaluronicAcid  rdf:type           owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label                    "Hyaluronic Acid";
-        sc:hasFunction                sc:Humectant;
-        sc:providesIngredientBenefit  sc:Hydrating , sc:SkinConditioning , sc:Moisturizing;
+        sc:hasFunction                sc:Humectant , sc:SkinConditioning;
+        sc:providesIngredientBenefit  sc:Hydrating , sc:Softening , sc:SkinConditioning , sc:Moisturizing;
         sc:recommendedFor             sc:Oily , sc:Normal , sc:Dry , sc:Combination;
         sc:treatsConcern              sc:Sensitivity , sc:Dryness , sc:Redness .
 
 sc:Ceramides  rdf:type                owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label                    "Ceramides";
         sc:hasFunction                sc:Emollient , sc:Occlusive;
-        sc:providesIngredientBenefit  sc:ReducesIrritation , sc:Hydrating;
+        sc:providesIngredientBenefit  sc:ReducesIrritation , sc:Hydrating , sc:Soothing;
         sc:recommendedFor             sc:Normal , sc:Dry;
         sc:synergisticWith            sc:Niacinamide , sc:HyaluronicAcid;
         sc:treatsConcern              sc:Sensitivity .
@@ -591,7 +598,7 @@ sc:BHA  rdf:type                      owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label                    "Beta Hydroxy Acid";
         sc:hasFunction                sc:Exfoliant;
         sc:incompatibleWith           sc:AHA , sc:Retinoid , sc:VitaminC;
-        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter;
+        sc:providesIngredientBenefit  sc:ReducesLargePores , sc:GoodForTexture , sc:AcneFighter , sc:Exfoliating;
         sc:recommendedFor             sc:Oily , sc:Normal , sc:Combination;
         sc:treatsConcern              sc:Texture , sc:Pores , sc:Acne .
 
@@ -631,3 +638,304 @@ sc:siliconeFree  rdf:type  owl:DatatypeProperty;
 sc:PHA  rdf:type        owl:NamedIndividual , sc:KeyIngredient;
         rdfs:label      "Polyhydroxy Acid";
         sc:hasFunction  sc:Exfoliant .
+
+sc:BarrierRepair rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Barrier Repair" .
+
+sc:Softening rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Softening" .
+
+sc:Soothing rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Soothing" .
+
+sc:Cleansing rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Cleansing" .
+
+sc:Exfoliating rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Exfoliating" .
+
+sc:Protecting rdf:type owl:NamedIndividual, sc:Benefit ;
+    rdfs:label "Protecting" .
+
+# ADDITION 1: Database mapping property (TAMBAH INI)
+sc:databaseId rdf:type owl:DatatypeProperty ;
+    rdfs:domain [ owl:unionOf ( sc:Ingredient sc:Product sc:Brand ) ] ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Maps ontology individuals to database primary keys" .
+
+# ADDITION 2: Enhanced relationship types (TAMBAH INI)
+sc:timingConflictWith rdf:type owl:ObjectProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range sc:Ingredient ;
+    rdfs:label "timing conflict with" ;
+    rdfs:comment "Ingredients yang tidak boleh dipakai bersamaan karena masalah timing" .
+
+sc:requiresAlternateUse rdf:type owl:ObjectProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range sc:Ingredient ;
+    rdfs:label "requires alternate use" ;
+    rdfs:comment "Ingredients yang perlu dijadwalkan berbeda (morning/evening)" .
+
+# ADDITION 3: Missing classes (TAMBAH INI)
+sc:InteractionRule rdf:type owl:Class ;
+    rdfs:label "Interaction Rule" ;
+    rdfs:comment "Rules for ingredient interactions and safety warnings" .
+
+sc:SafetyLevel rdf:type owl:Class ;
+    rdfs:label "Safety Level" ;
+    rdfs:comment "Classification of interaction safety levels" .
+
+sc:IngredientGuide rdf:type owl:Class ;
+    rdfs:label "Ingredient Guide" ;
+    rdfs:comment "Educational content about ingredients" .
+
+# ADDITION 4: Enhanced relationship properties (TAMBAH INI)
+sc:relationshipSource rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Source of relationship data: ontology, research, expert, educational_enhancement" .
+
+# ADDITION 5: Rule properties (TAMBAH INI)  
+sc:ruleCondition rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:InteractionRule ;
+    rdfs:range xsd:string .
+
+sc:severity rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:InteractionRule ;
+    rdfs:range xsd:string .
+
+sc:warningMessage rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:InteractionRule ;
+    rdfs:range xsd:string .
+
+sc:recommendation rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:InteractionRule ;
+    rdfs:range xsd:string .
+
+sc:difficultyLevel rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:IngredientGuide ;
+    rdfs:range xsd:string .
+
+sc:educationCategory rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:IngredientGuide ;
+    rdfs:range xsd:string .
+
+sc:targetAudience rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:IngredientGuide ;
+    rdfs:range xsd:string .
+
+sc:cautionWith rdf:type owl:ObjectProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range sc:Ingredient ;
+    rdfs:label "use caution with" ;
+    rdfs:comment "Ingredients yang bisa dikombinasi tapi perlu hati-hati dan tips khusus" .
+
+# UBAH: severity jadi integer (1-5) biar match database
+sc:strength rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "Risk level: 1=Very Safe, 2=Safe, 3=Caution, 4=High Risk, 5=Dangerous" .
+
+# UBAH: explanation jadi user-friendly bahasa Indonesia
+sc:safetyNotes rdf:type owl:DatatypeProperty ;
+    rdfs:domain sc:Ingredient ;
+    rdfs:range xsd:string ;
+    rdfs:comment "User-friendly safety explanation in Indonesian (maps to database 'notes' field)" .
+
+# ===============================================
+# UPDATED EXISTING INGREDIENTS - USER FRIENDLY EXPLANATIONS
+# ===============================================
+
+# Update Vitamin C - lebih user friendly
+sc:AscorbicAcidIngredient 
+    sc:strength 4 ;
+    sc:safetyNotes "💡 INGREDIENT BRIGHTENING YANG KUAT: Vitamin C bagus banget, tapi jangan dicampur dengan retinol atau acid keras. Bisa iritasi parah! Tips: pakai vitamin C pagi hari + SPF wajib." .
+
+# Update Retinol - awam friendly
+sc:RetinolIngredient 
+    sc:strength 5 ;
+    sc:safetyNotes "🌙 ANTI-AGING SUPERSTAR: Retinol adalah ingredient anti-aging terbaik, tapi JANGAN dicampur dengan vitamin C atau acid apapun. Bisa chemical burn! Retinol = malam hari only." .
+
+# Update Salicylic Acid - simple language
+sc:SalicylicAcidIngredient 
+    sc:strength 4 ;
+    sc:safetyNotes "🎯 ACID ANTI JERAWAT: Salicylic acid bagus untuk jerawat, tapi hati-hati kalau mau dicampur ingredient aktif lain. Bisa over-exfoliation. Mulai pelan-pelan!" .
+
+# Update Glycolic Acid - warning tone
+sc:GlycolicAcidIngredient 
+    sc:strength 5 ;
+    sc:safetyNotes "⚡ ACID TERKUAT: Glycolic acid adalah chemical exfoliant paling kuat. BAHAYA kalau dicampur retinol! Pilih salah satu aja, atau alternate days minimum." .
+
+# ===============================================
+# USER-FRIENDLY CAUTION RELATIONSHIPS
+# ===============================================
+
+# Niacinamide + Vitamin C - match database
+sc:NiacinamideIngredient sc:cautionWith sc:AscorbicAcidIngredient ;
+    sc:strength 3 ;
+    sc:safetyNotes "💡 BISA DICAMPUR TAPI HATI-HATI: Kedua ingredient ini bagus, tapi sebaiknya tidak langsung bersamaan karena bisa bikin kulit iritasi. Tips: pakai salah satu di pagi hari, satunya di malam hari. Atau tunggu 15 menit di antara keduanya." ;
+    sc:relationshipSource "educational_enhancement" .
+
+# Vitamin C + Salicylic Acid caution
+sc:AscorbicAcidIngredient sc:cautionWith sc:SalicylicAcidIngredient ;
+    sc:strength 4 ;
+    sc:safetyNotes "🚨 KOMBINASI POPULER TAPI RISKY: Banyak yang mau pakai vitamin C dan salicylic acid bersamaan. Bisa iritasi! Aturan emas: Vitamin C pagi hari (+ sunscreen wajib!), salicylic acid malam hari." ;
+    sc:relationshipSource "educational_enhancement" .
+
+# Retinol + Peptides caution  
+sc:RetinolIngredient sc:cautionWith sc:Peptides ;
+    sc:strength 3 ;
+    sc:safetyNotes "🌙 TIMING MATTERS: Retinol dan produk anti-aging peptide sebenarnya bisa dipakai bersamaan, tapi lebih aman kalau dipisah. Retinol malam hari, peptide pagi hari." ;
+    sc:relationshipSource "educational_enhancement" .
+
+# TIMING CONFLICTS dari database
+sc:AscorbicAcidIngredient sc:timingConflictWith sc:RetinolIngredient ;
+    sc:strength 4 ;
+    sc:safetyNotes "Waktu penggunaan sangat penting. Vitamin C adalah antioksidan yang optimal untuk pagi hari (memberikan perlindungan dari radikal bebas). Retinol sensitif terhadap cahaya dan optimal untuk malam hari (untuk regenerasi sel). Keduanya tidak boleh digunakan bersamaan karena dapat menyebabkan iritasi dan mengurangi efektivitas." ;
+    sc:relationshipSource "educational_enhancement" .
+
+sc:GlycolicAcidIngredient sc:requiresAlternateUse sc:SalicylicAcidIngredient ;
+    sc:strength 3 ;
+    sc:safetyNotes "Jadwal eksfoliasi perlu diatur. Glycolic acid dan salicylic acid sama-sama chemical exfoliant yang kuat. Jika ingin menggunakan keduanya, buat jadwal: Senin & Kamis untuk glycolic acid (malam), Selasa & Jumat untuk salicylic acid (malam). Hari lainnya istirahat atau gunakan pelembab saja. Wajib menggunakan SPF tinggi di pagi hari." ;
+    sc:relationshipSource "educational_enhancement" .
+  
+# ===============================================
+# NEW INGREDIENTS - USER FRIENDLY DARI AWAL
+# ===============================================
+
+# Benzoyl Peroxide - ingredient yang sering bikin masalah
+sc:BenzoylPeroxideIngredient rdf:type owl:NamedIndividual, sc:Ingredient ;
+    rdfs:label "Benzoyl Peroxide" ;
+    sc:IngredientName "Benzoyl Peroxide" ;
+    sc:hasFunction sc:Antimicrobial, sc:AntiAcne ;
+    sc:incompatibleWith sc:RetinolIngredient, sc:AscorbicAcidIngredient ;
+    sc:cautionWith sc:SalicylicAcidIngredient ;
+    sc:strength 5 ;
+    sc:safetyNotes "💥 ACNE FIGHTER EKSTREM: Benzoyl peroxide sangat efektif untuk jerawat, tapi JANGAN DICAMPUR apapun! Terutama retinol dan vitamin C = disaster! Pakai sendiri atau bergantian dengan ingredient lain." ;
+    sc:usageInstructions "Start 2.5%, gunakan malam hari, jangan campur dengan actives" ;
+    sc:pregnancySafe true ;
+    sc:treatsConcern sc:Acne ;
+    sc:recommendedFor sc:Oily, sc:Combination .
+
+# Lactic Acid - gentle AHA
+sc:LacticAcidIngredient rdf:type owl:NamedIndividual, sc:Ingredient ;
+    rdfs:label "Lactic Acid" ;
+    sc:IngredientName "Lactic Acid" ;
+    sc:hasFunction sc:Exfoliant, sc:Humectant ;
+    sc:incompatibleWith sc:RetinolIngredient ;
+    sc:cautionWith sc:AscorbicAcidIngredient ;
+    sc:synergisticWith sc:HyaluronicAcidIngredient, sc:NiacinamideIngredient ;
+    sc:strength 3 ;
+    sc:safetyNotes "🍃 AHA YANG LEBIH GENTLE: Lactic acid lebih lembut dari glycolic acid tapi tetap powerful. Jangan campur dengan retinol! Aman dikombinasi dengan hyaluronic acid dan niacinamide." ;
+    sc:treatsConcern sc:Texture, sc:Dryness ;
+    sc:recommendedFor sc:Normal, sc:Dry, sc:Sensitive ;
+    sc:pregnancySafe false ;
+    sc:usageInstructions "Mulai 1x seminggu, tingkatkan bertahap, WAJIB SPF" .
+
+# ===============================================
+# ENHANCED SYNERGISTIC RELATIONSHIPS - POSITIF TONE
+# ===============================================
+
+# Vitamin E + Vitamin C - classic combo
+sc:VitaminE sc:synergisticWith sc:VitaminC ;
+    sc:strength 1 ;
+    sc:safetyNotes "🌟 ANTIOKSIDAN DREAM TEAM! Vitamin E bikin vitamin C lebih stabil dan efektif. Kombinasi klasik untuk glowing skin. Super aman dipakai bersamaan!" ;
+    sc:relationshipSource "educational_enhancement" .
+
+# Ceramides + Niacinamide - barrier repair
+sc:Ceramides sc:synergisticWith sc:Niacinamide ;
+    sc:strength 1 ;
+    sc:safetyNotes "💪 PERFECT UNTUK KULIT BERMASALAH! Niacinamide + ceramide = tim repair kulit yang luar biasa. Niacinamide bikin kulit lebih sehat, ceramide jaga kelembaban. Ideal untuk kulit rusak atau sensitif." ;
+    sc:relationshipSource "educational_enhancement" .
+
+# Hyaluronic Acid + Ceramides - hydration max
+sc:HyaluronicAcid sc:synergisticWith sc:Ceramides ;
+    sc:strength 1 ;
+    sc:safetyNotes "💧 HYDRATION POWERHOUSE! Hyaluronic acid tarik air ke kulit, ceramide kunci kelembaban biar tidak hilang. Kombinasi ini wajib untuk yang punya kulit kering. Aman dipakai kapan aja!" ;
+    sc:relationshipSource "educational_enhancement" .
+
+# Niacinamide + Hyaluronic Acid - universal combo
+sc:Niacinamide sc:synergisticWith sc:HyaluronicAcid ;
+    sc:strength 1 ;
+    sc:safetyNotes "🌟 DREAM TEAM COMBINATION! Ini kombinasi yang SEMPURNA dan super aman! Niacinamide bantu kontrol minyak dan pori-pori, hyaluronic acid kasih hidrasi maksimal. Bisa dipakai pagi-malam tanpa khawatir. Perfect untuk pemula!" ;
+    sc:relationshipSource "educational_enhancement" .
+
+# ===============================================
+# UPDATED PRODUCT INTERACTION RULES - USER FRIENDLY
+# ===============================================
+
+sc:ProductInteractionRule1 rdf:type owl:NamedIndividual, sc:InteractionRule ;
+    sc:ruleCondition "contains_retinoid_and_vitamin_c" ;
+    sc:severity "high" ;
+    sc:warningMessage "🚫 JANGAN DICAMPUR! Produk ini mengandung retinoid dan vitamin C yang tidak boleh dipakai bersamaan." ;
+    sc:recommendation "✅ SOLUSI MUDAH: Vitamin C pagi hari + SPF wajib, retinoid malam hari. Begini udah perfect!" .
+
+sc:ProductInteractionRule2 rdf:type owl:NamedIndividual, sc:InteractionRule ;
+    sc:ruleCondition "contains_multiple_acids" ;
+    sc:severity "medium" ;
+    sc:warningMessage "⚠️ MULTIPLE ACIDS ALERT! Produk mengandung beberapa chemical exfoliant yang bisa over-exfoliation." ;
+    sc:recommendation "🐌 START SLOW: Mulai 1x seminggu, perhatikan reaksi kulit. Jangan serakah!" .
+
+sc:ProductInteractionRule3 rdf:type owl:NamedIndividual, sc:InteractionRule ;
+    sc:ruleCondition "contains_benzoyl_peroxide_and_retinoid" ;
+    sc:severity "very_high" ;
+    sc:warningMessage "💥 BAHAYA EKSTREM! Benzoyl peroxide + retinoid = resep chemical burn yang sangat berbahaya." ;
+    sc:recommendation "🚨 JANGAN COBA: Pilih salah satu saja atau consult dermatologist. Ini bukan joke!" .
+
+sc:ProductInteractionRule4 rdf:type owl:NamedIndividual, sc:InteractionRule ;
+    sc:ruleCondition "contains_aha_and_retinoid" ;
+    sc:severity "high" ;
+    sc:warningMessage "⚡ OVER-EXFOLIATION RISK! AHA + retinoid bisa bikin kulit rusak parah." ;
+    sc:recommendation "📅 ALTERNATE SCHEDULE: AHA Senin-Rabu, retinoid Selasa-Kamis. Istirahat weekend." .
+
+sc:ProductInteractionRule5 rdf:type owl:NamedIndividual, sc:InteractionRule ;
+    sc:ruleCondition "contains_vitamin_c_and_niacinamide" ;
+    sc:severity "medium" ;
+    sc:warningMessage "💭 BUTUH STRATEGI: Vitamin C + niacinamide bisa berinteraksi pada konsentrasi tinggi." ;
+    sc:recommendation "⏰ TIMING SOLUTION: Tunggu 15 menit antar aplikasi, atau vitamin C pagi + niacinamide malam." .
+
+sc:Rule_VitaminC_Retinol rdf:type sc:InteractionRule, owl:NamedIndividual ;
+    rdfs:label "Vitamin C + Retinol Incompatibility" ;
+    sc:ruleCondition "contains_vitamin_c_and_retinol" ;
+    sc:severity "very_high" ;
+    sc:warningMessage "🚫 JANGAN DICAMPUR! Produk ini mengandung vitamin C dan retinol yang tidak boleh dipakai bersamaan." ;
+    sc:recommendation "✅ SOLUSI MUDAH: Vitamin C pagi hari + SPF wajib, retinol malam hari. Begini udah perfect!" .
+
+sc:Rule_Multiple_Acids rdf:type sc:InteractionRule, owl:NamedIndividual ;
+    rdfs:label "Multiple Chemical Exfoliants" ;
+    sc:ruleCondition "contains_multiple_acids" ;
+    sc:severity "high" ;
+    sc:warningMessage "⚠️ MULTIPLE ACIDS ALERT! Produk mengandung beberapa chemical exfoliant yang bisa over-exfoliation." ;
+    sc:recommendation "🐌 START SLOW: Mulai 1x seminggu, perhatikan reaksi kulit. Jangan serakah!" .
+
+sc:Rule_Niacinamide_VitaminC rdf:type sc:InteractionRule, owl:NamedIndividual ;
+    rdfs:label "Niacinamide + Vitamin C Caution" ;
+    sc:ruleCondition "contains_niacinamide_and_vitamin_c" ;
+    sc:severity "medium" ;
+    sc:warningMessage "💭 BUTUH STRATEGI: Niacinamide + vitamin C bisa berinteraksi pada konsentrasi tinggi." ;
+    sc:recommendation "⏰ TIMING SOLUTION: Tunggu 15 menit antar aplikasi, atau vitamin C pagi + niacinamide malam." .
+
+# ===============================================
+# EDUCATIONAL CONTENT - BAHASA INDONESIA USER FRIENDLY
+# ===============================================
+
+sc:IngredientInteractionGuide rdf:type owl:NamedIndividual, sc:IngredientGuide ;
+    rdfs:label "Panduan Interaksi Ingredient" ;
+    sc:difficultyLevel "intermediate" ;
+    sc:educationCategory "interactions" ;
+    sc:targetAudience "intermediate_users" ;
+    sc:explanation "Panduan lengkap kombinasi ingredient yang aman vs berbahaya, dengan tips praktis untuk pemula hingga intermediate." .
+
+sc:SafeCombinationsGuide rdf:type owl:NamedIndividual, sc:IngredientGuide ;
+    rdfs:label "Kombinasi Aman untuk Pemula" ;
+    sc:difficultyLevel "beginner" ;
+    sc:educationCategory "safe_combinations" ;
+    sc:targetAudience "skincare_beginners" ;
+    sc:explanation "Daftar kombinasi ingredient yang 100% aman untuk skincare pemula, dengan penjelasan sederhana kenapa mereka cocok." .
+
+sc:DangerousCombinationsGuide rdf:type owl:NamedIndividual, sc:IngredientGuide ;
+    rdfs:label "Kombinasi yang HARUS Dihindari" ;
+    sc:difficultyLevel "beginner" ;
+    sc:educationCategory "dangerous_combinations" ;
+    sc:targetAudience "all_users" ;
+    sc:explanation "Warning guide tentang kombinasi ingredient yang berbahaya, dengan penjelasan mudah dan alternatif solusi." .
