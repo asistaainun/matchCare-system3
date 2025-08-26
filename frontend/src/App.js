@@ -8,7 +8,8 @@ import QuizPage from './pages/QuizPage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import IngredientsPage from './pages/IngredientsPage';
-
+import RoutinePlanner from './pages/RoutinePlanner';
+import EducationCenter from './pages/EducationCenter';
 // Components
 import Navbar from './components/Layout/Navbar';
 import Footer from './components/Layout/Footer';
@@ -40,7 +41,9 @@ function App() {
             
             {/* Ingredients Page */}
             <Route path="/ingredients" element={<IngredientsPage />} />
-            
+            <Route path="/routine-planner" element={<RoutinePlanner />} />
+            <Route path="/education" element={<EducationCenter />} />
+
             {/* 404 Page */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

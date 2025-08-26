@@ -1,6 +1,7 @@
 // src/components/Products/ProductCard.js - ENHANCED FOR ONTOLOGY
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import WarningDisplay from '../Safety/WarningDisplay';
 
 const ProductCard = ({ 
   product, 
@@ -11,6 +12,14 @@ const ProductCard = ({
 }) => {
   const [imageError, setImageError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [warnings, setWarnings] = useState([]);
+  useEffect(() => {
+    // Fetch warnings from your API
+    fetch(`/api/warnings/product/${product.id}`)
+      .then(res => res.json())
+      .then(data => setWarnings(data.warnings || []))
+      .catch(err => console.error('Warning fetch failed:', err));
+  }, [product.id]);
 
   // Extract ontology-specific data
   const isOntologyRecommendation = showOntologyFeatures && product.ontology_mapped;
@@ -259,9 +268,11 @@ const ProductCard = ({
             )}
           </div>
         )}
+        <WarningDisplay warnings={warnings} />
       </div>
     </div>
   );
 };
+
 
 export default ProductCard;

@@ -318,6 +318,33 @@ export function QuizProvider({ children }) {
     }
   }, [state.sessionId, state.quizId, API_BASE, setLoading, setError]);
   
+  // Add to your existing QuizContext.js
+  const fetchRecommendationsWithWarnings = async (sessionId) => {
+    try {
+      const response = await axios.get(`/api/recommendations/${sessionId}`);
+      const recommendations = response.data.data.recommendations;
+      
+      // Get warnings for each recommended product
+      const productsWithWarnings = await Promise.all(
+        recommendations.map(async (product) => {
+          try {
+            const warningResponse = await axios.get(`/api/warnings/product/${product.id}`);
+            return {
+              ...product,
+              warnings: warningResponse.data.warnings || []
+            };
+          } catch (error) {
+            return { ...product, warnings: [] };
+          }
+        })
+      );
+
+      return productsWithWarnings;
+    } catch (error) {
+      throw new Error('Failed to fetch recommendations with warnings');
+    }
+  };
+
   // Basic Actions - KEEP EXISTING INTERFACE
   const actions = {
     // Data setters
