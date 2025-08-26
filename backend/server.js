@@ -9,6 +9,12 @@ const morgan = require('morgan');
 const path = require('path');
 const { testConnections } = require('./config/database');
 const { Pool } = require('pg');
+const NodeCache = require('node-cache');
+const rateLimit = require('express-rate-limit');
+
+const errorHandler = require('./middleware/errorHandler');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
 
 // 🎓 CRITICAL CHANGE: Ganti dari hybridEngine ke ontologyEngine
 const ontologyEngine = require('./services/ontologyBasedRecommendationEngine');
@@ -25,6 +31,25 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT || 5432,
 });
+
+// Create cache instance
+const cache = new NodeCache({ stdTTL: 600 }); // 10 minutes cache
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests, please try again later'
+  },
+  skip: (req) => {
+    // Skip rate limit for test endpoints in development
+    return process.env.NODE_ENV === 'development' && 
+           (req.path.includes('/test') || req.path.includes('/health'));
+  }
+});
+app.use('/api/', limiter);
 
 // ===== MIDDLEWARE =====
 app.use(helmet());
@@ -75,6 +100,12 @@ const ingredientRoutes = require('./routes/ingredients');
 app.use('/api/ingredients', ingredientRoutes);
 const analysisRoutes = require('./routes/analysis');
 app.use('/api/analysis', analysisRoutes);
+// ADD THIS LINE di bagian require statements
+const warningRoutes = require('./routes/warnings');
+// ADD THIS LINE di bagian app.use routes
+app.use('/api/warnings', warningRoutes);
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // ===== HEALTH CHECK ENDPOINTS =====
 
@@ -1147,6 +1178,10 @@ function getErrorSuggestion(errorCategory) {
   return suggestions[errorCategory] || suggestions['GENERAL'];
 }
 
+
+// Add at the end before server startup
+app.use(errorHandler);
+
 // ===== SERVER STARTUP =====
 async function startServer() {
   try {
@@ -1225,6 +1260,8 @@ async function startServer() {
     process.exit(1);
   }
 }
+
+
 
 // Start the server
 startServer();
