@@ -1,21 +1,21 @@
 // frontend/src/pages/ProductDetailPage.js
 // COMPLETE PRODUCT DETAIL PAGE with Backend & Ontology Integration
 
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   // State management
   const [product, setProduct] = useState(null);
   const [ingredients, setIngredients] = useState([]);
   const [safetyAnalysis, setSafetyAnalysis] = useState(null);
   const [similarProducts, setSimilarProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
   const [imageError, setImageError] = useState(false);
 
   // Load product data on mount
@@ -28,54 +28,93 @@ const ProductDetailPage = () => {
   // Load complete product information
   const loadProductDetail = async () => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       console.log(`🔍 Loading product detail for ID: ${id}`);
-      
+
       // 1. Load basic product info
-      const productResponse = await fetch(`http://localhost:5000/api/products/${id}`);
-      
+      const productResponse = await fetch(
+        `http://localhost:5000/api/products/${id}`
+      );
+
       if (!productResponse.ok) {
         throw new Error(`Product not found (${productResponse.status})`);
       }
       const productData = await productResponse.json();
 
-      console.log('🔍 Raw API Response:', productData);
-      console.log('🔍 Product Brand Check:', {
+      console.log("🔍 Raw API Response:", productData);
+      console.log("🔍 Product Brand Check:", {
         brand: productData.data?.brand,
         brand_name: productData.data?.brand_name,
-        structure: Object.keys(productData)
+        structure: Object.keys(productData),
       });
 
       // Handle response structure - PERBAIKAN DI SINI
       if (!productData.success || !productData.product) {
-        throw new Error('Product data not found in response');
+        throw new Error("Product data not found in response");
       }
       const product = productData.product;
 
-      console.log('✅ Processed Product:', product);
+      console.log("✅ Processed Product:", product);
+      console.log("🔍 DETAILED INGREDIENT DEBUG:");
+      console.log("- product.ingredients exists:", !!product.ingredients);
+      console.log(
+        "- product.ingredients length:",
+        product.ingredients?.length || 0
+      );
+      console.log(
+        "- product.ingredient_list exists:",
+        !!product.ingredient_list
+      );
+      console.log(
+        "- product.ingredient_list preview:",
+        product.ingredient_list?.substring(0, 100)
+      );
+      console.log(
+        "- product.key_ingredients exists:",
+        !!product.key_ingredients
+      );
+      console.log(
+        "- product.key_ingredients preview:",
+        product.key_ingredients?.substring(0, 50)
+      );
+      if (product.ingredients) {
+        console.log("🔍 Backend ingredients array:", product.ingredients);
+      }
+
+      // Cek raw ingredient_list
+      if (product.ingredient_list) {
+        console.log("🔍 Raw ingredient_list (full):", product.ingredient_list);
+      }
+
+      // Cek key_ingredients
+      if (product.key_ingredients) {
+        console.log("🔍 Raw key_ingredients (full):", product.key_ingredients);
+      }
       setProduct(product);
 
       // 2. Load ingredient analysis - DENGAN FALLBACK
-      console.log('🔍 Checking ingredient sources:');
+      console.log("🔍 Checking ingredient sources:");
 
       if (product.ingredients && product.ingredients.length > 0) {
         // Backend sudah kirim array ingredients (FULL ONTOLOGY)
         await parseIngredientsFromBackend(product.ingredients);
       } else if (product.ingredient_list) {
         // ONTOLOGY FALLBACK: Parse + Query ontology untuk SEMUA ingredients
-        await parseWithOntologyFirst(product.ingredient_list, product.key_ingredients);
+        await parseWithOntologyFirst(
+          product.ingredient_list,
+          product.key_ingredients
+        );
       } else {
-        console.log('⚠️ No ingredients found in any format');
+        console.log("⚠️ No ingredients found in any format");
         setIngredients([]);
       }
 
       // 3. Load similar products (ontology recommendations)
       await loadSimilarProducts(product);
-
     } catch (error) {
-      console.error('❌ Product detail error:', error);
+      console.error("❌ Product detail error:", error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -86,102 +125,152 @@ const ProductDetailPage = () => {
   const parseIngredientsFromBackend = async (productIngredients) => {
     try {
       if (!productIngredients || productIngredients.length === 0) return;
-      
-      console.log('🧪 Processing ingredients from backend:', productIngredients);
-      
-      const ingredientAnalysis = productIngredients.map(ingredient => ({
+
+      console.log(
+        "🧪 Processing ingredients from backend:",
+        productIngredients
+      );
+
+      const ingredientAnalysis = productIngredients.map((ingredient) => ({
         name: ingredient.name,
         isKey: ingredient.is_key || false,
         functions: ingredient.functions || [],
         benefits: ingredient.benefits || [],
         ontologyData: {
-          function: ingredient.functions?.join(', '),
-          benefit: ingredient.benefits?.join(', '),
-          explanation: ingredient.categories?.join(', '),
-          suitable_for: ingredient.suitable_for?.join(', '),
-          addresses: ingredient.addresses?.join(', ')
-        }
+          function: ingredient.functions?.join(", "),
+          benefit: ingredient.benefits?.join(", "),
+          explanation: ingredient.categories?.join(", "),
+          suitable_for: ingredient.suitable_for?.join(", "),
+          addresses: ingredient.addresses?.join(", "),
+        },
       }));
-      
+
       setIngredients(ingredientAnalysis);
-      console.log(`✅ Processed ${ingredientAnalysis.length} ingredients from backend`);
-      
-      
+      console.log(
+        `✅ Processed ${ingredientAnalysis.length} ingredients from backend`
+      );
     } catch (error) {
-      console.error('❌ Backend ingredient processing error:', error);
+      console.error("❌ Backend ingredient processing error:", error);
     }
   };
 
-    // ONTOLOGY-FIRST: Query ontology untuk semua ingredients
+  // 2. PERBAIKI parseWithOntologyFirst() - ganti function yang ada
   const parseWithOntologyFirst = async (ingredientList, keyIngredients) => {
+    console.log("🧠 parseWithOntologyFirst called with:");
+    console.log("- ingredientList:", ingredientList);
+    console.log("- keyIngredients:", keyIngredients);
+    console.log("- ingredientList type:", typeof ingredientList);
+    console.log("- ingredientList length:", ingredientList?.length || 0);
+
     try {
-      console.log('🧠 ONTOLOGY-FIRST: Starting comprehensive analysis...');
-      
+      console.log("🧠 ONTOLOGY-FIRST: Starting comprehensive analysis...");
+      console.log("📋 Raw ingredient_list:", ingredientList);
+
       if (!ingredientList) {
         setIngredients([]);
         return;
       }
-      
-      // Parse ALL ingredients
-      const allIngredients = ingredientList
+
+      // FIXED: Parse ALL ingredients dengan cleaning yang lebih aggressive
+      let cleanedList = ingredientList
+        .replace(
+          /^(KOMPOSISI\s*:?\s*|INGREDIENTS\s*:?\s*|BAHAN\s*:?\s*|INCI\s*:?\s*)/i,
+          ""
+        )
+        .trim();
+
+      console.log("🧹 Cleaned ingredient_list:", cleanedList);
+
+      const allIngredients = cleanedList
         .split(/[,|;]/)
-        .map(ing => ing.trim())
-        .filter(ing => ing.length > 2);
-      
-      const keyIngredientsArray = keyIngredients 
-        ? keyIngredients.split(/[,|;]/).map(ing => ing.trim()).filter(ing => ing.length > 2)
+        .map(
+          (ing) =>
+            ing
+              .trim()
+              .replace(/^\d+\.\s*/, "") // Remove numbering like "1. "
+              .replace(/^-\s*/, "") // Remove dashes "- "
+              .replace(/\s+/g, " ") // Normalize spaces
+              .toUpperCase() // Normalize case
+        )
+        .filter((ing) => {
+          // More aggressive filtering
+          return (
+            ing.length > 2 &&
+            !ing.match(/^(DLL|ETC|AND|OR|WATER\s*\(|AQUA\s*\(|H2O)$/i) &&
+            !ing.match(/^\d+$/) && // Remove pure numbers
+            ing.trim().length > 0
+          );
+        });
+
+      const keyIngredientsArray = keyIngredients
+        ? keyIngredients
+            .split(/[,|;]/)
+            .map((ing) => ing.trim().toUpperCase())
+            .filter((ing) => ing.length > 2)
         : [];
-      
-      console.log(`🔍 ONTOLOGY ANALYSIS TARGET: ${allIngredients.length} ingredients`);
-      
+
+      console.log(`🔍 PARSED ${allIngredients.length} total ingredients:`);
+      console.log(`📋 First 10 ingredients:`, allIngredients.slice(0, 10));
+      console.log(
+        `🔑 ${keyIngredientsArray.length} key ingredients:`,
+        keyIngredientsArray
+      );
+      console.log(`🔍 DETAILED PARSING RESULT:`);
+      console.log(`- Raw ingredientList: "${ingredientList}"`);
+      console.log(`- Cleaned ingredientList: "${cleanedList}"`);
+      console.log(`- Split result length: ${allIngredients.length}`);
+      console.log(`- First 5 parsed:`, allIngredients.slice(0, 5));
+      console.log(`- All parsed ingredients:`, allIngredients);
       const ingredientAnalysis = [];
-      
-      // 🧠 QUERY ONTOLOGY untuk SEMUA ingredients (prioritas key ingredients)
-      const ingredientsToAnalyze = [
-        ...keyIngredientsArray.slice(0, 10), // Max 10 key ingredients
-        ...allIngredients.filter(ing => !keyIngredientsArray.includes(ing)).slice(0, 15) // Max 15 regular
-      ];
-      
-      console.log(`🎯 Querying ontology for ${ingredientsToAnalyze.length} ingredients...`);
-      
-      for (const [index, ingredient] of ingredientsToAnalyze.entries()) {
-        try {
-          console.log(`🔍 [${index + 1}/${ingredientsToAnalyze.length}] Querying: ${ingredient}`);
-          
-          // MULTIPLE ONTOLOGY ENDPOINTS untuk coverage maksimal
-          const ontologyData = await queryMultipleOntologyEndpoints(ingredient);
-          
-          ingredientAnalysis.push({
-            name: ingredient,
-            isKey: keyIngredientsArray.includes(ingredient),
-            ontologyData: ontologyData,
-            ontologyPowered: true,
-            analysisMethod: 'SPARQL_SEMANTIC_QUERY'
-          });
-          
-          // Small delay to prevent overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-        } catch (err) {
-          console.warn(`⚠️ Ontology query failed for: ${ingredient}`, err);
-          ingredientAnalysis.push({
-            name: ingredient,
-            isKey: keyIngredientsArray.includes(ingredient),
-            ontologyData: null,
-            ontologyPowered: false,
-            analysisMethod: 'FALLBACK'
-          });
+
+      // Process ALL ingredients - PENTING: Jangan batasi dengan slice()
+      for (const ingredient of allIngredients) {
+        const isKey = keyIngredientsArray.some(
+          (key) => key === ingredient // Exact match after normalization
+        );
+
+        let ontologyData = null;
+        // Only query ontology for key ingredients to avoid overload
+        if (isKey) {
+          try {
+            console.log(
+              `🔍 Querying ontology for key ingredient: ${ingredient}`
+            );
+            const response = await fetch(
+              `http://localhost:5000/api/ingredients?search=${encodeURIComponent(ingredient)}&limit=1`
+            );
+            const data = await response.json();
+            if (data.success && data.data && data.data.length > 0) {
+              ontologyData = data.data[0];
+              console.log(`✅ Found ontology data for: ${ingredient}`);
+            }
+          } catch (err) {
+            console.warn(`⚠️ Ontology query failed for: ${ingredient}`, err);
+          }
         }
+
+        ingredientAnalysis.push({
+          name: ingredient,
+          isKey: isKey,
+          ontologyData: ontologyData,
+          ontologyPowered: !!ontologyData,
+          analysisMethod: isKey ? "ONTOLOGY_QUERY" : "BASIC_PARSE",
+        });
       }
-      
+
       setIngredients(ingredientAnalysis);
-      console.log(`✅ ONTOLOGY ANALYSIS COMPLETE: ${ingredientAnalysis.length} ingredients processed`);
-      
+      console.log(`✅ PROCESSED ALL ${ingredientAnalysis.length} ingredients`);
+      console.log(
+        `🔑 Key ingredients: ${ingredientAnalysis.filter((ing) => ing.isKey).length}`
+      );
+      console.log(
+        `🧠 Ontology powered: ${ingredientAnalysis.filter((ing) => ing.ontologyPowered).length}`
+      );
+
       // Perform advanced safety analysis
       await performAdvancedSafetyAnalysis(ingredientAnalysis);
-      
     } catch (error) {
-      console.error('❌ ONTOLOGY-FIRST parsing error:', error);
+      console.error("❌ ONTOLOGY-FIRST parsing error:", error);
       setIngredients([]);
     }
   };
@@ -194,50 +283,53 @@ const ProductDetailPage = () => {
       // Secondary: Key ingredients
       `http://localhost:5000/api/ingredients/key-ingredients`,
       // Tertiary: Benefits lookup
-      `http://localhost:5000/api/ingredients/benefits`
+      `http://localhost:5000/api/ingredients/benefits`,
     ];
-    
+
     for (const endpoint of endpoints) {
       try {
         const response = await fetch(endpoint);
         const data = await response.json();
-        
+
         if (data.success && data.data) {
           // Primary endpoint - direct match
-          if (endpoint.includes('search=')) {
+          if (endpoint.includes("search=")) {
             if (data.data.length > 0) {
               return data.data[0];
             }
           }
-          
+
           // Secondary endpoint - find in key ingredients
-          if (endpoint.includes('key-ingredients')) {
+          if (endpoint.includes("key-ingredients")) {
             for (const [category, ingredients] of Object.entries(data.data)) {
-              const match = ingredients.find(ing => 
-                ing.name.toLowerCase().includes(ingredient.toLowerCase()) ||
-                ingredient.toLowerCase().includes(ing.name.toLowerCase())
+              const match = ingredients.find(
+                (ing) =>
+                  ing.name.toLowerCase().includes(ingredient.toLowerCase()) ||
+                  ingredient.toLowerCase().includes(ing.name.toLowerCase())
               );
               if (match) {
                 return {
                   ...match,
                   category: category,
-                  isKeyIngredient: true
+                  isKeyIngredient: true,
                 };
               }
             }
           }
-          
+
           // Tertiary endpoint - find in benefits
-          if (endpoint.includes('benefits')) {
+          if (endpoint.includes("benefits")) {
             for (const [category, benefits] of Object.entries(data.data)) {
-              if (benefits.some(benefit => 
-                benefit.toLowerCase().includes(ingredient.toLowerCase())
-              )) {
+              if (
+                benefits.some((benefit) =>
+                  benefit.toLowerCase().includes(ingredient.toLowerCase())
+                )
+              ) {
                 return {
                   name: ingredient,
-                  benefit: benefits.join(', '),
+                  benefit: benefits.join(", "),
                   category: category,
-                  source: 'benefits_mapping'
+                  source: "benefits_mapping",
                 };
               }
             }
@@ -248,38 +340,43 @@ const ProductDetailPage = () => {
         continue;
       }
     }
-    
+
     return null;
   };
 
   // Load ingredient analysis using ontology
   const loadIngredientAnalysis = async (ingredientList, keyIngredients) => {
     try {
-      console.log('🧪 Analyzing ingredients with ontology...');
-      
+      console.log("🧪 Analyzing ingredients with ontology...");
+
       // Parse ingredients
-      const allIngredients = ingredientList.split(',').map(ing => ing.trim());
-      const keyIngredientsArray = keyIngredients ? keyIngredients.split(',').map(ing => ing.trim()) : [];
+      const allIngredients = ingredientList.split(",").map((ing) => ing.trim());
+      const keyIngredientsArray = keyIngredients
+        ? keyIngredients.split(",").map((ing) => ing.trim())
+        : [];
 
       // Get ontology analysis for key ingredients
       const ingredientAnalysis = [];
-      
-      for (const ingredient of keyIngredientsArray.slice(0, 5)) { // Limit to 5 key ingredients
+
+      for (const ingredient of keyIngredientsArray.slice(0, 5)) {
+        // Limit to 5 key ingredients
         try {
-          const response = await fetch(`http://localhost:5000/api/ingredients?search=${encodeURIComponent(ingredient)}&limit=1`);
+          const response = await fetch(
+            `http://localhost:5000/api/ingredients?search=${encodeURIComponent(ingredient)}&limit=1`
+          );
           const data = await response.json();
-          
+
           if (data.success && data.data.length > 0) {
             ingredientAnalysis.push({
               name: ingredient,
               isKey: true,
-              ontologyData: data.data[0]
+              ontologyData: data.data[0],
             });
           } else {
             ingredientAnalysis.push({
               name: ingredient,
               isKey: true,
-              ontologyData: null
+              ontologyData: null,
             });
           }
         } catch (err) {
@@ -287,108 +384,117 @@ const ProductDetailPage = () => {
           ingredientAnalysis.push({
             name: ingredient,
             isKey: true,
-            ontologyData: null
+            ontologyData: null,
           });
         }
       }
 
       // Add regular ingredients
-      allIngredients.forEach(ingredient => {
+      allIngredients.forEach((ingredient) => {
         if (!keyIngredientsArray.includes(ingredient)) {
           ingredientAnalysis.push({
             name: ingredient,
             isKey: false,
-            ontologyData: null
+            ontologyData: null,
           });
         }
-      });// ONTOLOGY FALLBACK: Parse + Query ontology untuk SEMUA ingredients
-      await parseWithOntologyFirst(product.ingredient_list, product.key_ingredients);
+      }); // ONTOLOGY FALLBACK: Parse + Query ontology untuk SEMUA ingredients
+      await parseWithOntologyFirst(
+        product.ingredient_list,
+        product.key_ingredients
+      );
 
       setIngredients(ingredientAnalysis);
-      console.log(`✅ Ingredient analysis complete: ${ingredientAnalysis.length} ingredients`);
+      console.log(
+        `✅ Ingredient analysis complete: ${ingredientAnalysis.length} ingredients`
+      );
 
       // Perform safety analysis
       await performAdvancedSafetyAnalysis(ingredientAnalysis);
-
     } catch (error) {
-      console.error('❌ Ingredient analysis error:', error);
+      console.error("❌ Ingredient analysis error:", error);
     }
   };
 
   // Safety analysis based on ontology data
-    // ADVANCED SAFETY ANALYSIS dengan ontology
+  // ADVANCED SAFETY ANALYSIS dengan ontology
   const performAdvancedSafetyAnalysis = async (ingredientAnalysis) => {
     try {
-      console.log('🛡️ ADVANCED ONTOLOGY SAFETY ANALYSIS...');
-      
+      console.log("🛡️ ADVANCED ONTOLOGY SAFETY ANALYSIS...");
+
       const safetyFlags = [];
       const ontologyInsights = [];
-      let overallSafety = 'Safe';
+      let overallSafety = "Safe";
       let ontologyConfidence = 0;
-      
+
       // Analyze each ingredient
-      ingredientAnalysis.forEach(ingredient => {
+      ingredientAnalysis.forEach((ingredient) => {
         if (ingredient.ontologyData) {
           ontologyConfidence += 1;
-          
+
           const data = ingredient.ontologyData;
-          
+
           // Safety warnings dari ontology
-          if (data.safety && data.safety.toLowerCase().includes('caution')) {
+          if (data.safety && data.safety.toLowerCase().includes("caution")) {
             safetyFlags.push({
-              type: 'warning',
+              type: "warning",
               ingredient: ingredient.name,
               message: `${ingredient.name}: ${data.safety}`,
-              source: 'ontology'
+              source: "ontology",
             });
-            overallSafety = 'Caution Required';
+            overallSafety = "Caution Required";
           }
-          
+
           // Function-based analysis
           if (data.function) {
             const functions = data.function.toLowerCase();
-            
-            if (functions.includes('exfoliant')) {
+
+            if (functions.includes("exfoliant")) {
               safetyFlags.push({
-                type: 'info',
+                type: "info",
                 ingredient: ingredient.name,
                 message: `${ingredient.name} is an exfoliant - use sunscreen and start slowly`,
-                source: 'ontology_function'
+                source: "ontology_function",
               });
             }
-            
-            if (functions.includes('retinoid') || functions.includes('retinol')) {
+
+            if (
+              functions.includes("retinoid") ||
+              functions.includes("retinol")
+            ) {
               safetyFlags.push({
-                type: 'warning',
+                type: "warning",
                 ingredient: ingredient.name,
                 message: `${ingredient.name} is a retinoid - avoid during pregnancy, use at night only`,
-                source: 'ontology_function'
+                source: "ontology_function",
               });
             }
           }
-          
+
           // Benefit insights
           if (data.benefit) {
             ontologyInsights.push({
               ingredient: ingredient.name,
               insight: data.benefit,
-              category: data.category || 'General'
+              category: data.category || "General",
             });
           }
         }
       });
-      
+
       // Calculate ontology confidence
-      const confidencePercentage = Math.round((ontologyConfidence / ingredientAnalysis.length) * 100);
-      
+      const confidencePercentage = Math.round(
+        (ontologyConfidence / ingredientAnalysis.length) * 100
+      );
+
       // Product-level safety properties
       const safetyProps = [];
-      if (product?.alcohol_free) safetyProps.push('Alcohol Free');
-      if (product?.fragrance_free) safetyProps.push('Fragrance Free');
-      if (product?.paraben_free) safetyProps.push('Paraben Free');
-      if (product?.sulfate_free) safetyProps.push('Sulfate Free');
-      if (product?.silicone_free) safetyProps.push('Silicone Free');
-      
+      if (product?.alcohol_free) safetyProps.push("Alcohol Free");
+      if (product?.fragrance_free) safetyProps.push("Fragrance Free");
+      if (product?.paraben_free) safetyProps.push("Paraben Free");
+      if (product?.sulfate_free) safetyProps.push("Sulfate Free");
+      if (product?.silicone_free) safetyProps.push("Silicone Free");
+
       setSafetyAnalysis({
         overallSafety,
         flags: safetyFlags,
@@ -396,42 +502,44 @@ const ProductDetailPage = () => {
         ontologyInsights,
         ontologyConfidence: confidencePercentage,
         analysis: `Advanced ontology analysis of ${ingredientAnalysis.length} ingredients (${confidencePercentage}% ontology coverage)`,
-        analysisMethod: 'SPARQL_SEMANTIC_SAFETY_ANALYSIS'
+        analysisMethod: "SPARQL_SEMANTIC_SAFETY_ANALYSIS",
       });
-      
-      console.log(`✅ SAFETY ANALYSIS COMPLETE: ${safetyFlags.length} flags, ${ontologyInsights.length} insights`);
-      
+
+      console.log(
+        `✅ SAFETY ANALYSIS COMPLETE: ${safetyFlags.length} flags, ${ontologyInsights.length} insights`
+      );
     } catch (error) {
-      console.error('❌ Advanced safety analysis error:', error);
+      console.error("❌ Advanced safety analysis error:", error);
     }
   };
 
   // Load similar products using ontology recommendations
   const loadSimilarProducts = async (currentProduct) => {
     try {
-      console.log('🔍 Finding similar products...');
-      
+      console.log("🔍 Finding similar products...");
+
       // Use category and key ingredients for similarity
       const params = new URLSearchParams({
-        category: currentProduct.main_category || '',
-        limit: '4'
+        category: currentProduct.main_category || "",
+        limit: "4",
       });
 
-      const response = await fetch(`http://localhost:5000/api/products?${params}`);
+      const response = await fetch(
+        `http://localhost:5000/api/products?${params}`
+      );
       const data = await response.json();
 
       if (data.success) {
         // Filter out current product and limit results
         const similar = data.data
-          .filter(p => p.id !== currentProduct.id)
+          .filter((p) => p.id !== currentProduct.id)
           .slice(0, 4);
-        
+
         setSimilarProducts(similar);
         console.log(`✅ Found ${similar.length} similar products`);
       }
-
     } catch (error) {
-      console.error('❌ Similar products error:', error);
+      console.error("❌ Similar products error:", error);
     }
   };
 
@@ -442,16 +550,16 @@ const ProductDetailPage = () => {
 
   // Get image URL with fallback
   const getImageUrl = () => {
-    if (!product) return '/images/placeholder-product.jpg';
-    
+    if (!product) return "/images/placeholder-product.jpg";
+
     if (product.image_urls && !imageError) {
       return product.image_urls;
     }
     if (product.image_urls && !imageError) {
-      const images = product.image_urls.split(',');
+      const images = product.image_urls.split(",");
       return images[0]?.trim();
     }
-    return '/images/placeholder-product.jpg';
+    return "/images/placeholder-product.jpg";
   };
 
   // Loading state
@@ -472,11 +580,13 @@ const ProductDetailPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Product Not Found
+          </h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-x-4">
             <button
-              onClick={() => navigate('/products')}
+              onClick={() => navigate("/products")}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Back to Products
@@ -500,9 +610,13 @@ const ProductDetailPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-blue-600">Home</Link>
+          <Link to="/" className="hover:text-blue-600">
+            Home
+          </Link>
           <span>›</span>
-          <Link to="/products" className="hover:text-blue-600">Products</Link>
+          <Link to="/products" className="hover:text-blue-600">
+            Products
+          </Link>
           <span>›</span>
           <span className="text-gray-900">{product.name}</span>
         </nav>
@@ -535,7 +649,9 @@ const ProductDetailPage = () => {
             <div className="space-y-6">
               {/* Brand & Category */}
               <div className="text-sm text-gray-600">
-                <span className="font-medium">{product.brand_name || product.brand?.name || 'Unknown Brand'}</span>
+                <span className="font-medium">
+                  {product.brand_name || product.brand?.name || "Unknown Brand"}
+                </span>
                 {product.product_type && (
                   <>
                     <span className="mx-2">•</span>
@@ -545,7 +661,9 @@ const ProductDetailPage = () => {
               </div>
 
               {/* Product Name */}
-              <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {product.name}
+              </h1>
 
               {/* Categories */}
               <div className="flex flex-wrap gap-2">
@@ -561,13 +679,38 @@ const ProductDetailPage = () => {
                 )}
               </div>
 
+              {/* BPOM Registration */}
+              {product.bpom_number && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <span className="text-green-600 text-xl mr-3">🏛️</span>
+                    <div>
+                      <h3 className="font-semibold text-green-800">
+                        BPOM Registered
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        Registration Number:{" "}
+                        <span className="font-mono font-medium">
+                          {product.bpom_number}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Product Properties */}
               {safetyAnalysis && safetyAnalysis.properties.length > 0 && (
                 <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded">
-                  <h3 className="font-semibold text-green-800 mb-2">What's Inside (and What Isn't)</h3>
+                  <h3 className="font-semibold text-green-800 mb-2">
+                    What's Inside (and What Isn't)
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {safetyAnalysis.properties.map((prop, index) => (
-                      <span key={index} className="px-2 py-1 bg-green-200 text-green-800 rounded text-sm">
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-green-200 text-green-800 rounded text-sm"
+                      >
                         ✓ {prop}
                       </span>
                     ))}
@@ -578,11 +721,14 @@ const ProductDetailPage = () => {
               {/* Safety Analysis */}
               {safetyAnalysis && safetyAnalysis.flags.length > 0 && (
                 <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-                  <h3 className="font-semibold text-yellow-800 mb-2">Safety Information</h3>
+                  <h3 className="font-semibold text-yellow-800 mb-2">
+                    Safety Information
+                  </h3>
                   <div className="space-y-2">
                     {safetyAnalysis.flags.map((flag, index) => (
                       <div key={index} className="text-sm text-yellow-700">
-                        <strong>{flag.type === 'warning' ? '⚠️' : 'ℹ️'}</strong> {flag.message}
+                        <strong>{flag.type === "warning" ? "⚠️" : "ℹ️"}</strong>{" "}
+                        {flag.message}
                       </div>
                     ))}
                   </div>
@@ -615,17 +761,17 @@ const ProductDetailPage = () => {
           <div className="border-b border-gray-200">
             <div className="flex">
               {[
-                { key: 'overview', label: 'Overview', icon: '📋' },
-                { key: 'ingredients', label: 'Ingredients', icon: '🧪' },
-                { key: 'usage', label: 'How to Use', icon: '📖' }
+                { key: "overview", label: "Overview", icon: "📋" },
+                { key: "ingredients", label: "Ingredients", icon: "🧪" },
+                { key: "usage", label: "How to Use", icon: "📖" },
               ].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex-1 px-6 py-4 text-center font-medium transition-colors ${
                     activeTab === tab.key
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-gray-50'
+                      ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-gray-50"
                   }`}
                 >
                   <span className="mr-2">{tab.icon}</span>
@@ -637,12 +783,15 @@ const ProductDetailPage = () => {
 
           {/* Tab Content */}
           <div className="p-8">
-            {activeTab === 'overview' && (
+            {activeTab === "overview" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Product Description</h3>
+                  <h3 className="text-lg font-semibold mb-3">
+                    Product Description
+                  </h3>
                   <p className="text-gray-700 leading-relaxed">
-                    {product.description || 'No description available for this product.'}
+                    {product.description ||
+                      "No description available for this product."}
                   </p>
                 </div>
 
@@ -650,69 +799,96 @@ const ProductDetailPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Suitable For</h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.suitable_for_skin_types.split(',').map((skinType, index) => (
-                        <span key={index} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                          {skinType.trim()} Skin
-                        </span>
-                      ))}
+                      {product.suitable_for_skin_types
+                        .split(",")
+                        .map((skinType, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                          >
+                            {skinType.trim()} Skin
+                          </span>
+                        ))}
                     </div>
                   </div>
                 )}
 
                 {product.addresses_concerns && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Addresses Concerns</h3>
+                    <h3 className="text-lg font-semibold mb-3">
+                      Addresses Concerns
+                    </h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.addresses_concerns.split(',').map((concern, index) => (
-                        <span key={index} className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm">
-                          {concern.trim()}
-                        </span>
-                      ))}
+                      {product.addresses_concerns
+                        .split(",")
+                        .map((concern, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm"
+                          >
+                            {concern.trim()}
+                          </span>
+                        ))}
                     </div>
                   </div>
                 )}
               </div>
             )}
 
-            {activeTab === 'ingredients' && (
+            {activeTab === "ingredients" && (
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Key Ingredients 
-                    <span className="text-sm font-normal text-gray-600 ml-2">
-                      (Analyzed with Ontology)
-                    </span>
+                    Key Ingredients
                   </h3>
-                  
+
                   <div className="space-y-4">
-                    {ingredients.filter(ing => ing.isKey).map((ingredient, index) => (
-                      <div key={index} className="border border-gray-200 rounded-lg p-4">
-                        <h4 className="font-semibold text-gray-900 mb-2">{ingredient.name}</h4>
-                        
-                        {ingredient.ontologyData ? (
-                          <div className="space-y-2 text-sm">
-                            {ingredient.ontologyData.function && (
-                              <p><strong>Function:</strong> {ingredient.ontologyData.function}</p>
-                            )}
-                            {ingredient.ontologyData.benefit && (
-                              <p><strong>Benefit:</strong> {ingredient.ontologyData.benefit}</p>
-                            )}
-                            {ingredient.ontologyData.explanation && (
-                              <p><strong>Details:</strong> {ingredient.ontologyData.explanation}</p>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-600">
-                            Key ingredient - ontology analysis pending
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                    {ingredients
+                      .filter((ing) => ing.isKey)
+                      .map((ingredient, index) => (
+                        <div
+                          key={index}
+                          className="border border-gray-200 rounded-lg p-4"
+                        >
+                          <h4 className="font-semibold text-gray-900 mb-2">
+                            {ingredient.name}
+                          </h4>
+
+                          {ingredient.ontologyData ? (
+                            <div className="space-y-2 text-sm">
+                              {ingredient.ontologyData.function && (
+                                <p>
+                                  <strong>Function:</strong>{" "}
+                                  {ingredient.ontologyData.function}
+                                </p>
+                              )}
+                              {ingredient.ontologyData.benefit && (
+                                <p>
+                                  <strong>Benefit:</strong>{" "}
+                                  {ingredient.ontologyData.benefit}
+                                </p>
+                              )}
+                              {ingredient.ontologyData.explanation && (
+                                <p>
+                                  <strong>Details:</strong>{" "}
+                                  {ingredient.ontologyData.explanation}
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-600">
+                              Key ingredient - ontology analysis pending
+                            </p>
+                          )}
+                        </div>
+                      ))}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4">Full Ingredient List</h3>
+                  <h3 className="text-lg font-semibold mb-4">
+                    Full Ingredient List
+                  </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <div className="flex flex-wrap gap-1">
                       {ingredients.map((ingredient, index) => (
@@ -720,8 +896,8 @@ const ProductDetailPage = () => {
                           key={index}
                           className={`inline-block px-2 py-1 rounded text-xs ${
                             ingredient.isKey
-                              ? 'bg-blue-100 text-blue-700 font-medium'
-                              : 'bg-gray-200 text-gray-700'
+                              ? "bg-blue-100 text-blue-700 font-medium"
+                              : "bg-gray-200 text-gray-700"
                           }`}
                         >
                           {ingredient.name}
@@ -733,183 +909,13 @@ const ProductDetailPage = () => {
               </div>
             )}
 
-                        {activeTab === 'ingredients' && (
-              <div className="space-y-6">
-                {/* ONTOLOGY CONFIDENCE INDICATOR */}
-                {safetyAnalysis?.ontologyConfidence && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold text-blue-800">🧠 Ontology Analysis Coverage</h4>
-                        <p className="text-sm text-blue-600">
-                          {safetyAnalysis.ontologyConfidence}% of ingredients analyzed with semantic knowledge
-                        </p>
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600">
-                        {safetyAnalysis.ontologyConfidence}%
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    🔬 Key Ingredients 
-                    <span className="text-sm font-normal text-gray-600 ml-2">
-                      (SPARQL Semantic Analysis)
-                    </span>
-                  </h3>
-                  
-                  <div className="space-y-4">
-                    {ingredients.filter(ing => ing.isKey).map((ingredient, index) => (
-                      <div key={index} className={`border rounded-lg p-4 ${
-                        ingredient.ontologyPowered ? 'border-green-200 bg-green-50' : 'border-gray-200'
-                      }`}>
-                        <div className="flex items-start justify-between">
-                          <h4 className="font-semibold text-gray-900 mb-2">{ingredient.name}</h4>
-                          
-                          {/* ONTOLOGY POWERED BADGE */}
-                          {ingredient.ontologyPowered && (
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                              🧠 Ontology Verified
-                            </span>
-                          )}
-                        </div>
-                        
-                        {ingredient.ontologyData ? (
-                          <div className="space-y-2 text-sm">
-                            {ingredient.ontologyData.function && (
-                              <div className="flex items-start">
-                                <span className="font-medium text-blue-600 mr-2">🔧 Function:</span>
-                                <span className="text-gray-700">{ingredient.ontologyData.function}</span>
-                              </div>
-                            )}
-                            {ingredient.ontologyData.benefit && (
-                              <div className="flex items-start">
-                                <span className="font-medium text-green-600 mr-2">✨ Benefit:</span>
-                                <span className="text-gray-700">{ingredient.ontologyData.benefit}</span>
-                              </div>
-                            )}
-                            {ingredient.ontologyData.explanation && (
-                              <div className="flex items-start">
-                                <span className="font-medium text-purple-600 mr-2">📚 Details:</span>
-                                <span className="text-gray-700">{ingredient.ontologyData.explanation}</span>
-                              </div>
-                            )}
-                            {ingredient.ontologyData.category && (
-                              <div className="flex items-start">
-                                <span className="font-medium text-orange-600 mr-2">🏷️ Category:</span>
-                                <span className="text-gray-700">{ingredient.ontologyData.category}</span>
-                              </div>
-                            )}
-                            
-                            {/* ONTOLOGY CONFIDENCE SCORE */}
-                            {ingredient.ontologyData.confidence && (
-                              <div className="mt-2 pt-2 border-t border-gray-200">
-                                <div className="flex items-center justify-between text-xs">
-                                  <span className="text-gray-500">Ontology Confidence:</span>
-                                  <span className={`font-medium ${
-                                    ingredient.ontologyData.confidence > 0.8 ? 'text-green-600' :
-                                    ingredient.ontologyData.confidence > 0.6 ? 'text-yellow-600' : 'text-red-600'
-                                  }`}>
-                                    {Math.round(ingredient.ontologyData.confidence * 100)}%
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                            <div className="flex items-center">
-                              <span className="text-yellow-500 mr-2">⏳</span>
-                              <span>Key ingredient - ontology analysis pending or unavailable</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* ONTOLOGY INSIGHTS SECTION */}
-                {safetyAnalysis?.ontologyInsights && safetyAnalysis.ontologyInsights.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">
-                      🧠 Ontology Insights
-                      <span className="text-sm font-normal text-gray-600 ml-2">
-                        (Knowledge Graph Analysis)
-                      </span>
-                    </h3>
-                    
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <div className="space-y-3">
-                        {safetyAnalysis.ontologyInsights.map((insight, index) => (
-                          <div key={index} className="flex items-start">
-                            <span className="text-blue-600 mr-2">💡</span>
-                            <div>
-                              <span className="font-medium text-blue-800">{insight.ingredient}:</span>
-                              <span className="text-blue-700 ml-1">{insight.insight}</span>
-                              {insight.category && (
-                                <span className="text-xs text-blue-500 ml-2">({insight.category})</span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">📋 Full Ingredient List</h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex flex-wrap gap-1">
-                      {ingredients.map((ingredient, index) => (
-                        <span
-                          key={index}
-                          className={`inline-block px-2 py-1 rounded text-xs transition-colors ${
-                            ingredient.isKey
-                              ? 'bg-blue-100 text-blue-700 font-medium border border-blue-200'
-                              : ingredient.ontologyPowered
-                              ? 'bg-green-100 text-green-700 border border-green-200'
-                              : 'bg-gray-200 text-gray-700'
-                          }`}
-                          title={ingredient.ontologyPowered ? 'Analyzed with ontology' : 'Standard ingredient'}
-                        >
-                          {ingredient.ontologyPowered && '🧠 '}
-                          {ingredient.name}
-                        </span>
-                      ))}
-                    </div>
-                    
-                    {/* INGREDIENT STATISTICS */}
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="font-semibold text-gray-900">{ingredients.length}</div>
-                          <div className="text-gray-600">Total Ingredients</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-blue-600">{ingredients.filter(ing => ing.isKey).length}</div>
-                          <div className="text-gray-600">Key Ingredients</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-semibold text-green-600">{ingredients.filter(ing => ing.ontologyPowered).length}</div>
-                          <div className="text-gray-600">Ontology Analyzed</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'usage' && (
+            {activeTab === "usage" && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">How to Use</h3>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {product.how_to_use || 'Usage instructions not available for this product.'}
+                    {product.how_to_use ||
+                      "Usage instructions not available for this product."}
                   </p>
                 </div>
               </div>
@@ -930,16 +936,20 @@ const ProductDetailPage = () => {
                 >
                   <div className="aspect-square bg-gray-100">
                     <img
-                      src={similar.image_urls || '/images/placeholder-product.jpg'}
+                      src={
+                        similar.image_urls || "/images/placeholder-product.jpg"
+                      }
                       alt={similar.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        e.target.src = '/images/placeholder-product.jpg';
+                        e.target.src = "/images/placeholder-product.jpg";
                       }}
                     />
                   </div>
                   <div className="p-4">
-                    <p className="text-sm text-gray-600 mb-1">{similar.brand_name}</p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      {similar.brand_name}
+                    </p>
                     <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {similar.name}
                     </h3>

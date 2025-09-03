@@ -231,6 +231,7 @@ router.get('/', async (req, res) => {
           p.paraben_free,
           p.sulfate_free,
           p.silicone_free,
+          p.ingredient_list,
           p.key_ingredients_csv,
           p.product_url
           ${selectExtraFields}
@@ -258,6 +259,7 @@ router.get('/', async (req, res) => {
           description: product.description,
           category: product.main_category,
           subcategory: product.subcategory,
+          ingredient_list: product.ingredient_list,
           image: product.image_urls || ['/images/placeholder-product.jpg'],
           suitable_for: product.suitable_for_skin_types || [],
           addresses: product.addresses_concerns || [],
@@ -445,6 +447,7 @@ router.get('/:id', async (req, res) => {
           position: ing.position
         })),
         bpom_number: product.bpom_number,
+        ingredient_list: product.ingredient_list,
         product_url: product.product_url,
         created_at: product.created_at,
         updated_at: product.updated_at

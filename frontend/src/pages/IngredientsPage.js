@@ -20,12 +20,12 @@ const IngredientsPage = () => {
 
   // Categories for filtering
   const categories = [
-    { key: 'all', label: 'All Ingredients', icon: '🔬' },
-    { key: 'exfoliant', label: 'Exfoliants', icon: '✨' },
-    { key: 'humectant', label: 'Moisturizers', icon: '💧' },
-    { key: 'antioxidant', label: 'Antioxidants', icon: '🛡️' },
-    { key: 'uv filter', label: 'UV Filters', icon: '☀️' },
-    { key: 'emollient', label: 'Emollients', icon: '🌿' }
+    { key: 'all', label: 'Semua Ingredients', icon: '🔬' },
+    { key: 'exfoliant', label: 'Exfoliant', icon: '✨' },
+    { key: 'humectant', label: 'Pelembab', icon: '💧' },
+    { key: 'antioxidant', label: 'Antioksidan', icon: '🛡️' },
+    { key: 'uv filter', label: 'UV Filter', icon: '☀️' },
+    { key: 'emollient', label: 'Emollient', icon: '🌿' }
   ];
 
   // Load ingredients on component mount
@@ -457,10 +457,10 @@ const IngredientsPage = () => {
               {/* Action Buttons */}
               <div className="flex space-x-4 pt-4 border-t border-gray-200">
                 <button className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors">
-                  Mark as Liked ♡
+                  Tandai Sebagai Disukai ♡
                 </button>
                 <button className="flex-1 bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 transition-colors">
-                  Mark as Avoided ⚠️
+                  Tandai Sebagai Dihindari ⚠️
                 </button>
               </div>
             </div>

@@ -27,11 +27,11 @@ const QuizPage = () => {
 
   // Skin types and options
   const skinTypes = [
-    { id: 'normal', label: 'Normal', desc: 'Balanced, neither too oily nor too dry' },
-    { id: 'dry', label: 'Dry', desc: 'Often feels tight, may have flaky patches' },
-    { id: 'oily', label: 'Oily', desc: 'Shiny, especially in T-zone, prone to breakouts' },
-    { id: 'combination', label: 'Combination', desc: 'Oily T-zone, normal/dry cheeks' },
-    { id: 'unsure', label: "I'm not sure with my skin type", desc: 'Take a quick assessment to find out' }
+    { id: 'normal', label: 'Normal', desc: 'Seimbang, tidak terlalu berminyak atau kering' },
+    { id: 'dry', label: 'Dry', desc: 'Kering, sering terasa kencang, mungkin ada area yang mengelupas' },
+    { id: 'oily', label: 'Oily', desc: 'Berminyak, terutama di zona T, rentan terhadap jerawat' },
+    { id: 'combination', label: 'Combination', desc: 'Kombinasi, zona T berminyak, pipi normal/kering' },
+    { id: 'unsure', label: "Saya tidak yakin dengan tipe kulit saya", desc: 'Ikuti penilaian singkat untuk mengetahuinya' }
   ];
 
   const concerns = [
@@ -41,12 +41,12 @@ const QuizPage = () => {
   ];
 
   const sensitivities = [
-    { id: 'fragrance', label: 'Fragrance', desc: 'Perfumes and essential oils' },
-    { id: 'alcohol', label: 'Alcohol', desc: 'Denatured alcohol in products' },
-    { id: 'silicone', label: 'Silicone', desc: 'Dimethicone and similar compounds' },
-    { id: 'paraben', label: 'Paraben', desc: 'Preservatives like methylparaben' },
-    { id: 'sulfate', label: 'Sulfate', desc: 'Sodium lauryl sulfate and similar' },
-    { id: 'none', label: 'No known sensitivities', desc: 'I can use most ingredients safely' }
+    { id: 'fragrance', label: 'Fragrance', desc: 'Pewangi dan minyak esensial' },
+    { id: 'alcohol', label: 'Alcohol', desc: 'Alkohol denaturasi dalam produk' },
+    { id: 'silicone', label: 'Silicone', desc: 'Dimethicone dan senyawa serupa' },
+    { id: 'paraben', label: 'Paraben', desc: 'Pengawet seperti methylparaben' },
+    { id: 'sulfate', label: 'Sulfate', desc: 'Sodium lauryl sulfate dan sejenisnya' },
+    { id: 'none', label: 'Tidak ada sensitivitas yang diketahui', desc: 'Saya dapat menggunakan sebagian besar bahan dengan aman' }
   ];
 
   // Handle skin type selection
@@ -93,7 +93,7 @@ const QuizPage = () => {
     try {
       // Validate quiz data
       if (!quizData.skin_type) {
-        throw new Error('Please select your skin type');
+        throw new Error('Silakan pilih tipe kulitmu');
       }
 
       console.log('📋 Submitting quiz data:', quizData);
@@ -106,11 +106,11 @@ const QuizPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Quiz submission failed: ${response.status}`);
+        throw new Error(`Kuis gagal dikirim: ${response.status}`);
       }
 
       const result = await response.json();
-      console.log('✅ Quiz submitted successfully:', result);
+      console.log('✅ Kuis berhasil dikirim:', result);
 
       // Redirect to products page with quiz results
       const queryParams = new URLSearchParams({
@@ -164,10 +164,10 @@ const QuizPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Skin Assessment Quiz
+            Kuis Penilaian Kulit
           </h1>
           <p className="text-gray-600">
-            Get personalized ontology-based skincare recommendations
+            Dapatkan rekomendasi skincare yang dipersonalisasi
           </p>
           
           {error && (
@@ -197,7 +197,7 @@ const QuizPage = () => {
           {/* Step 1: Skin Type Assessment */}
           {currentStep === 1 && !showSkinTypeAssessment && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">What's your skin type?</h2>
+              <h2 className="text-xl font-semibold mb-4">Apa tipe kulitmu?</h2>
               <div className="space-y-3">
                 {skinTypes.map((type) => (
                   <button
@@ -218,7 +218,7 @@ const QuizPage = () => {
               {quizData.skin_type && quizData.skin_type !== 'unsure' && (
                 <div className="mt-6 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800">
-                    ✅ Selected skin type: <strong className="capitalize">{quizData.skin_type}</strong>
+                    ✅ Tipe kulit terpilih: <strong className="capitalize">{quizData.skin_type}</strong>
                   </p>
                 </div>
               )}
@@ -233,12 +233,12 @@ const QuizPage = () => {
           {/* Step 2: Skin Concerns */}
           {currentStep === 2 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">What are your skin concerns?</h2>
-              <p className="text-gray-600 mb-4">Select all that apply (at least one)</p>
-              
+              <h2 className="text-xl font-semibold mb-4">Apa masalah kulitmu?</h2>
+              <p className="text-gray-600 mb-4">Pilih semua yang sesuai (setidaknya satu)</p>
+
               <div className="mb-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-blue-800">
-                  Your skin type: <strong className="capitalize">{quizData.skin_type}</strong>
+                  Tipe kulitmu: <strong className="capitalize">{quizData.skin_type}</strong>
                 </p>
               </div>
               
@@ -261,7 +261,7 @@ const QuizPage = () => {
               {quizData.concerns.length > 0 && (
                 <div className="mt-4 p-3 bg-green-50 rounded-lg">
                   <p className="text-green-800 text-sm">
-                    ✅ Selected concerns: {quizData.concerns.join(', ')}
+                    ✅ Masalah kulit terpilih: {quizData.concerns.join(', ')}
                   </p>
                 </div>
               )}
@@ -271,9 +271,9 @@ const QuizPage = () => {
           {/* Step 3: Sensitivities */}
           {currentStep === 3 && (
             <div>
-              <h2 className="text-xl font-semibold mb-4">Do you have any known sensitivities?</h2>
-              <p className="text-gray-600 mb-4">This helps us avoid ingredients that might irritate your skin</p>
-              
+              <h2 className="text-xl font-semibold mb-4">Apakah Anda memiliki sensitivitas yang diketahui?</h2>
+              <p className="text-gray-600 mb-4">Ini membantu kami menghindari bahan-bahan yang mungkin mengiritasi kulit Anda</p>
+
               <div className="space-y-3">
                 {sensitivities.map((sensitivity) => (
                   <button
@@ -295,8 +295,8 @@ const QuizPage = () => {
               <div className="mt-4 p-3 bg-green-50 rounded-lg">
                 <p className="text-green-800 text-sm">
                   {quizData.sensitivities.length === 0 
-                    ? '✅ No known sensitivities - you can use most ingredients'
-                    : `✅ Avoiding: ${quizData.sensitivities.join(', ')}`
+                    ? '✅ Tidak ada sensitivitas yang diketahui - Anda dapat menggunakan sebagian besar bahan'
+                    : `✅ Menghindari: ${quizData.sensitivities.join(', ')}`
                   }
                 </p>
               </div>
@@ -327,7 +327,7 @@ const QuizPage = () => {
                 disabled={loading || !canProceed()}
                 className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Getting Recommendations...' : 'Get My Recommendations ✨'}
+                {loading ? 'Mendapatkan Rekomendasi...' : 'Dapatkan Rekomendasi Saya ✨'}
               </button>
             )}
           </div>
@@ -344,39 +344,39 @@ const SkinTypeAssessment = ({ onComplete }) => {
 
   const questions = [
     {
-      question: "How does your skin feel when you wake up in the morning?",
+      question: "Apa yang dirasakan kulitmu saat bangun tidur?",
       options: [
-        { text: "Tight, dry, maybe flaky", value: "dry" },
-        { text: "Normal, comfortable, balanced", value: "normal" },
-        { text: "Oily or shiny, especially on forehead, nose, and chin", value: "oily" },
-        { text: "Dry or normal on cheeks, oily in T-zone", value: "combination" }
+        { text: "Ketat, kering, mungkin mengelupas", value: "dry" },
+        { text: "Normal, nyaman, seimbang", value: "normal" },
+        { text: "Berminyak atau mengkilap, terutama di dahi, hidung, dan dagu", value: "oily" },
+        { text: "Kering atau normal di pipi, berminyak di zona T", value: "combination" }
       ]
     },
     {
-      question: "How does your skin feel a few hours after washing your face?",
+      question: "Bagaimana kulitmu terasa beberapa jam setelah mencuci wajah?",
       options: [
-        { text: "Tight or rough, sometimes flaky", value: "dry" },
-        { text: "Balanced, neither oily nor dry", value: "normal" },
-        { text: "Oily and shiny, especially in the T-zone", value: "oily" },
-        { text: "Oily in T-zone, dry or normal on other areas", value: "combination" }
+        { text: "Ketat atau kasar, kadang-kadang mengelupas", value: "dry" },
+        { text: "Seimbang, tidak berminyak atau kering", value: "normal" },
+        { text: "Berminyak dan mengkilap, terutama di zona T", value: "oily" },
+        { text: "Berminyak di zona T, kering atau normal di area lain", value: "combination" }
       ]
     },
     {
-      question: "How often do you get oily shine during the day?",
+      question: "Seberapa sering kulitmu berminyak sepanjang hari?",
       options: [
-        { text: "Rarely, skin feels dry", value: "dry" },
-        { text: "Rarely, skin looks balanced", value: "normal" },
-        { text: "Often, skin looks shiny or greasy", value: "oily" },
-        { text: "Only in some areas, mostly T-zone", value: "combination" }
+        { text: "Jarang, kulit terasa kering", value: "dry" },
+        { text: "Jarang, kulit terlihat seimbang", value: "normal" },
+        { text: "Sering, kulit terlihat mengkilap atau berminyak", value: "oily" },
+        { text: "Hanya di beberapa area, terutama zona T", value: "combination" }
       ]
     },
     {
-      question: "Do you experience flaky or rough patches?",
+      question: "Apakah kamu mengalami bercak kering atau kasar?",
       options: [
-        { text: "Yes, frequently", value: "dry" },
-        { text: "Rarely", value: "normal" },
-        { text: "Almost never", value: "oily" },
-        { text: "Sometimes on cheeks only", value: "combination" }
+        { text: "Ya, sering", value: "dry" },
+        { text: "Jarang", value: "normal" },
+        { text: "Hampir tidak pernah", value: "oily" },
+        { text: "Kadang-kadang hanya di pipi", value: "combination" }
       ]
     }
   ];
@@ -425,7 +425,7 @@ const SkinTypeAssessment = ({ onComplete }) => {
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Back to skin type selection
+          Kembali ke pemilihan jenis kulit
         </button>
         
         <div className="mb-4">
@@ -464,7 +464,7 @@ const SkinTypeAssessment = ({ onComplete }) => {
             onClick={goBack}
             className="mt-4 px-4 py-2 text-gray-600 hover:text-gray-800"
           >
-            ← Previous Question
+            ← Pertanyaan Sebelumnya
           </button>
         )}
       </div>

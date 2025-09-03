@@ -235,16 +235,16 @@ const ProductsPage = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
-                {isQuizBased ? 'Your Personalized Recommendations' : 'Skincare Products'}
+                {isQuizBased ? 'Rekomendasi Produk yang Telah Dipersonalisasi' : 'Produk Skincare'}
               </h1>
               <p className="text-gray-600 mt-1">
                 {isQuizBased && quizResults ? (
                   <>
-                    Based on your {quizResults.skin_type} skin 
-                    {quizResults.concerns.length > 0 && ` and ${quizResults.concerns.join(', ')} concerns`}
+                    Berdasarkan jenis kulit {quizResults.skin_type} Anda
+                    {quizResults.concerns.length > 0 && ` dan ${quizResults.concerns.join(', ')} sebagai masalah kulit utama Anda`}
                   </>
                 ) : (
-                  'Discover the perfect skincare products for your needs'
+                  'Temukan skincare yang sempurna untuk kebutuhan Anda'
                 )}
               </p>
             </div>

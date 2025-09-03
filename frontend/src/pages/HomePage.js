@@ -41,11 +41,10 @@ const HomePage = () => {
       <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Find Your Perfect Skincare Match
+            Temukan Skincare yang tepat untuk Kulitmu
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Want to know skincare that suits your skin type? Fill out your beauty profile here!
-            Our AI-powered system analyzes ingredients and skin types to recommend the best products for you.
+            Ingin tahu skincare yang cocok untuk jenis kulitmu? Isi profil kecantikanmu di sini!
           </p>
           
           {/* CTA Button */}
@@ -53,11 +52,11 @@ const HomePage = () => {
             to="/quiz"
             className="inline-block bg-blue-600 text-white text-lg px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl"
           >
-            Get Started - Take Skin Quiz 🧪
+            Mulai - Ikuti Kuis Kulit
           </Link>
           
           <div className="mt-8 text-gray-500">
-            <p>✨ Free • 2 minutes • Personalized results</p>
+            <p> Dapatkan hasil yang dipersonalisasi</p>
           </div>
         </div>
       </section>
@@ -67,10 +66,10 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              How MatchCare Works
+              Cara Kerja MatchCare
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Our intelligent system uses ontology-based matching to analyze ingredients and find products perfect for your skin.
+              Sistem cerdas kami menggunakan pencocokan berbasis ontologi untuk menganalisis bahan-bahan dan menemukan produk yang sempurna untuk kulitmu.
             </p>
           </div>
 
@@ -80,9 +79,9 @@ const HomePage = () => {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🧪</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Take Skin Quiz</h3>
+              <h3 className="text-xl font-semibold mb-2">Ikuti Kuis Kulit</h3>
               <p className="text-gray-600">
-                Answer questions about your skin type, concerns, and sensitivities
+                Jawab pertanyaan tentang jenis kulit, masalah kulit, dan sensitivitas kulitmu
               </p>
             </div>
 
@@ -91,9 +90,9 @@ const HomePage = () => {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🔍</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
+              <h3 className="text-xl font-semibold mb-2">Analisis AI</h3>
               <p className="text-gray-600">
-                Our system analyzes thousands of products and ingredients to find your matches
+                Sistem kami menganalisis ribuan produk dan bahan untuk menemukan yang cocok untukmu
               </p>
             </div>
 
@@ -102,9 +101,9 @@ const HomePage = () => {
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">✨</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Get Recommendations</h3>
+              <h3 className="text-xl font-semibold mb-2">Dapatkan Rekomendasi</h3>
               <p className="text-gray-600">
-                Receive personalized product suggestions with detailed explanations
+                Terima saran produk yang dipersonalisasi dengan penjelasan mendetail
               </p>
             </div>
           </div>
@@ -116,7 +115,7 @@ const HomePage = () => {
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Explore MatchCare
+              Jelajahi MatchCare
             </h2>
           </div>
 
@@ -125,10 +124,10 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="text-center">
                 <div className="text-3xl mb-4">🎯</div>
-                <h3 className="font-semibold mb-2">Browse by Skin Concern</h3>
-                <p className="text-gray-600 text-sm mb-4">Find products for acne, dryness, aging</p>
+                <h3 className="font-semibold mb-2">Jelajahi Berdasarkan Masalah Kulit</h3>
+                <p className="text-gray-600 text-sm mb-4">Temukan produk untuk jerawat, kekeringan, penuaan</p>
                 <Link to="/products?filter=concerns" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Explore →
+                  Jelajahi →
                 </Link>
               </div>
             </div>
@@ -137,10 +136,10 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="text-center">
                 <div className="text-3xl mb-4">📦</div>
-                <h3 className="font-semibold mb-2">Product Categories</h3>
+                <h3 className="font-semibold mb-2">Kategori Produk</h3>
                 <p className="text-gray-600 text-sm mb-4">Cleanser, moisturizer, serum, sunscreen</p>
                 <Link to="/products?filter=category" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Browse →
+                  Jelajahi →
                 </Link>
               </div>
             </div>
@@ -149,10 +148,10 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="text-center">
                 <div className="text-3xl mb-4">🏷️</div>
-                <h3 className="font-semibold mb-2">Shop by Brand</h3>
+                <h3 className="font-semibold mb-2">Jelajahi Berdasarkan Merek</h3>
                 <p className="text-gray-600 text-sm mb-4">CeraVe, The Ordinary, Cetaphil</p>
                 <Link to="/products?filter=brand" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Shop →
+                  Jelajahi →
                 </Link>
               </div>
             </div>
@@ -161,10 +160,10 @@ const HomePage = () => {
             <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
               <div className="text-center">
                 <div className="text-3xl mb-4">🌿</div>
-                <h3 className="font-semibold mb-2">Learn Ingredients</h3>
-                <p className="text-gray-600 text-sm mb-4">Understand what's in your products</p>
+                <h3 className="font-semibold mb-2">Pelajari Bahan</h3>
+                <p className="text-gray-600 text-sm mb-4">Pahami apa yang ada dalam produk Anda</p>
                 <Link to="/ingredients" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Learn →
+                  Pelajari →
                 </Link>
               </div>
             </div>

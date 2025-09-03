@@ -84,6 +84,7 @@ exports.getProduct = async (req, res) => {
       id: product.id,
       name: product.name,
       description: product.description,
+      ingredient_list: product.ingredient_list,
       how_to_use: product.how_to_use,
       brand: {
         id: product.Brand?.id,
