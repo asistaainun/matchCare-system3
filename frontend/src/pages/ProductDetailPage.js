@@ -45,80 +45,32 @@ const ProductDetailPage = () => {
       const productData = await productResponse.json();
 
       console.log("🔍 Raw API Response:", productData);
-      console.log("🔍 Product Brand Check:", {
-        brand: productData.data?.brand,
-        brand_name: productData.data?.brand_name,
-        structure: Object.keys(productData),
-      });
 
-      // Handle response structure - PERBAIKAN DI SINI
+      // FIXED: Handle response structure correctly
       if (!productData.success || !productData.product) {
         throw new Error("Product data not found in response");
       }
+      
       const product = productData.product;
-
       console.log("✅ Processed Product:", product);
-      console.log("🔍 DETAILED INGREDIENT DEBUG:");
-      console.log("📊 Data source:", product.data_source);
-      console.log("📋 Total ingredients:", product.total_ingredients);
-      console.log("🔑 Key ingredients:", product.key_ingredients_count);
-
-      console.log("- product.ingredients exists:", !!product.ingredients);
-      console.log(
-        "- product.ingredients length:",
-        product.ingredients?.length || 0
-      );
-      console.log(
-        "- product.ingredient_list exists:",
-        !!product.ingredient_list
-      );
-      console.log(
-        "- product.ingredient_list preview:",
-        product.ingredient_list?.substring(0, 100)
-      );
-      console.log(
-        "- product.key_ingredients exists:",
-        !!product.key_ingredients
-      );
-      console.log(
-        "- product.key_ingredients preview:",
-        product.key_ingredients?.substring(0, 50)
-      );
-
-
-      if (product.ingredients) {
-        console.log("🔍 Backend ingredients array:", product.ingredients);
-      }
-
-      // Cek raw ingredient_list
-      if (product.ingredient_list) {
-        console.log("🔍 Raw ingredient_list (full):", product.ingredient_list);
-      }
-
-      // Cek key_ingredients
-      if (product.key_ingredients) {
-        console.log("🔍 Raw key_ingredients (full):", product.key_ingredients);
-      }
-
-            if (!productData.success || !productData.product) {
-        throw new Error("Product data not found in response");
-      }
 
       setProduct(product);
 
       // 2. Load ingredient analysis - DENGAN FALLBACK
-      console.log("🔍 Checking ingredient sources:");
+      console.log("🔍 Processing ingredient data:");
 
-      if (product.ingredients && product.ingredients.length > 0) {
-        console.log(`📋 Using ${product.ingredients.length} full ingredients from backend`);
+      // Backend sends `ingredients` array (already parsed)
+      if (product.ingredients && Array.isArray(product.ingredients)) {
+        console.log(`📋 Using ${product.ingredients.length} ingredients from backend array`);
         setIngredients(product.ingredients);
       } else {
         console.log("⚠️ No ingredients array from backend, setting empty");
         setIngredients([]);
       }
 
-      if (product.key_ingredients && product.key_ingredients.length > 0) {
-        console.log(`🔑 Using ${product.key_ingredients.length} key ingredients from backend`);
+      // FIXED: Backend sends `key_ingredients` as ARRAY, not string
+      if (product.key_ingredients && Array.isArray(product.key_ingredients)) {
+        console.log(`🔑 Using ${product.key_ingredients.length} key ingredients from backend array`);
         setKeyIngredients(product.key_ingredients);
       } else {
         console.log("⚠️ No key ingredients array from backend, setting empty");
@@ -632,9 +584,9 @@ const ProductDetailPage = () => {
   const getImageUrl = () => {
     if (!product) return "/images/placeholder-product.jpg";
 
+    // Backend sends single image URL string, not comma-separated
     if (product.image_urls && !imageError) {
-      const images = product.image_urls.split(",");
-      return images[0]?.trim();
+      return product.image_urls;
     }
     return "/images/placeholder-product.jpg";
   };
@@ -748,23 +700,7 @@ const ProductDetailPage = () => {
                 )}
               </div>
 
-              {/* Data Source Badge */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex items-center">
-                  <span className="text-blue-600 text-sm mr-2">📊</span>
-                  <div>
-                    <span className="text-sm font-medium text-blue-800">
-                      Data Source: {product.data_source?.replace(/_/g, ' ').toUpperCase()}
-                    </span>
-                    <p className="text-xs text-blue-600">
-                      {product.total_ingredients} total • {product.key_ingredients_count} key ingredients
-                      {product.key_ingredients_with_details !== undefined && 
-                        ` • ${product.key_ingredients_with_details} with detailed info`
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
+              
 
               {/* BPOM Registration */}
               {product.bpom_number && (
@@ -928,7 +864,7 @@ const ProductDetailPage = () => {
                 {/* Key Ingredients Section */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Key Ingredients ({keyIngredients.length})
+                    Key Ingredients
                   </h3>
 
                   {keyIngredients.length > 0 ? (
@@ -979,13 +915,7 @@ const ProductDetailPage = () => {
                                 </div>
                               )}
 
-                              {/* Data source indicator */}
-                              <div className="pt-2 border-t border-gray-100">
-                                <span className="text-xs text-gray-500">
-                                  Source: {ingredient.details.source.replace(/_/g, ' ')}
-                                  {ingredient.details.slug && ` • Slug: ${ingredient.details.slug}`}
-                                </span>
-                              </div>
+      
                             </div>
                           )}
 
@@ -1008,7 +938,7 @@ const ProductDetailPage = () => {
                 {/* Full Ingredient List */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Full Ingredient List ({ingredients.length} total)
+                    Full Ingredient List
                   </h3>
                   
                   {ingredients.length > 0 ? (
@@ -1030,18 +960,6 @@ const ProductDetailPage = () => {
                         ))}
                       </div>
                       
-                      {/* Ingredient count summary */}
-                      <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
-                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded mr-2">
-                          {keyIngredients.length} Key Ingredients
-                        </span>
-                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                          {ingredients.length - keyIngredients.length} Regular Ingredients
-                        </span>
-                        <span className="ml-2">
-                          • Parsed from CSV ingredient list
-                        </span>
-                      </div>
                     </div>
                   ) : (
                     <div className="bg-gray-50 rounded-lg p-4 text-center">
