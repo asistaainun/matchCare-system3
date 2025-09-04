@@ -18,6 +18,12 @@ const ProductDetailPage = () => {
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
   const [imageError, setImageError] = useState(false);
+  const [productWarnings, setProductWarnings] = useState({
+  warnings: [],
+  synergies: [],
+  loading: true,
+  error: null
+  });
 
   // Load product data on mount
   useEffect(() => {
@@ -25,6 +31,46 @@ const ProductDetailPage = () => {
       loadProductDetail();
     }
   }, [id]);
+
+  useEffect(() => {
+    const fetchProductWarnings = async () => {
+      if (!product?.id) return;
+      
+      try {
+        setProductWarnings(prev => ({ ...prev, loading: true }));
+        
+        const response = await fetch(`http://localhost:5000/api/warnings/product/${product.id}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          setProductWarnings({
+            warnings: data.data.warnings || [],
+            synergies: data.data.synergies || [],
+            loading: false,
+            error: null
+          });
+          console.log(`✅ Loaded ${data.data.warnings.length} warnings for product ${product.id}`);
+        } else {
+          setProductWarnings(prev => ({ 
+            ...prev, 
+            loading: false, 
+            error: data.message 
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch warnings:', error);
+        setProductWarnings(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: 'Failed to load warnings' 
+        }));
+      }
+    };
+
+    if (product?.id) {
+      fetchProductWarnings();
+    }
+  }, [product?.id]);
 
   // Load complete product information
   const loadProductDetail = async () => {
@@ -630,8 +676,122 @@ const ProductDetailPage = () => {
     );
   }
 
-  if (!product) return null;
+  const WarningSection = () => {
+    if (productWarnings.loading) {
+      return (
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+            <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+          </div>
+        </div>
+      );
+    }
 
+    if (productWarnings.error) {
+      return (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <span className="text-red-500 mr-2">⚠️</span>
+            <span className="text-red-700">Failed to load ingredient warnings</span>
+          </div>
+        </div>
+      );
+    }
+
+    const { warnings, synergies } = productWarnings;
+    const hasWarnings = warnings.length > 0;
+    const hasSynergies = synergies.length > 0;
+
+    if (!hasWarnings && !hasSynergies) {
+      return (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <span className="text-green-500 mr-2">✅</span>
+            <span className="text-green-700 font-medium">No known ingredient conflicts detected</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-6">
+        {/* Warnings Section */}
+        {hasWarnings && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 mb-4">
+            <div className="flex items-center mb-3">
+              <span className="text-yellow-600 mr-2">⚠️</span>
+              <h4 className="font-semibold text-yellow-800">
+                Ingredient Interaction Warnings ({warnings.length})
+              </h4>
+            </div>
+            
+            <div className="space-y-3">
+              {warnings.map((warning, index) => (
+                <div key={index} className="bg-white rounded p-3 border border-yellow-200">
+                  <div className="flex items-start">
+                    <div className={`
+                      w-2 h-2 rounded-full mt-2 mr-3 flex-shrink-0
+                      ${warning.severity === 'high' ? 'bg-red-500' : 
+                        warning.severity === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}
+                    `}></div>
+                    <div className="flex-1">
+                      <p className="text-gray-800 mb-1">
+                        <span className="font-semibold">{warning.ingredient1}</span>
+                        {warning.ingredient2 && (
+                          <>
+                            <span className="mx-2 text-yellow-600">+</span>
+                            <span className="font-semibold">{warning.ingredient2}</span>
+                          </>
+                        )}
+                      </p>
+                      <p className="text-gray-700 text-sm mb-2">{warning.warning_message}</p>
+                      {warning.recommendation && (
+                        <p className="text-yellow-700 text-sm bg-yellow-100 p-2 rounded">
+                          <span className="mr-1">💡</span>
+                          {warning.recommendation}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Synergies Section */}
+        {hasSynergies && (
+          <div className="bg-green-50 border-l-4 border-green-400 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <span className="text-green-600 mr-2">✅</span>
+              <h4 className="font-semibold text-green-800">
+                Beneficial Ingredient Combinations ({synergies.length})
+              </h4>
+            </div>
+            
+            <div className="space-y-3">
+              {synergies.map((synergy, index) => (
+                <div key={index} className="bg-white rounded p-3 border border-green-200">
+                  <p className="text-gray-800 mb-1">
+                    <span className="font-semibold text-green-700">
+                      {synergy.ingredients.join(' + ')}
+                    </span>
+                  </p>
+                  <p className="text-gray-700 text-sm mb-1">{synergy.message}</p>
+                  <p className="text-green-700 text-sm bg-green-100 p-2 rounded">
+                    <strong>Benefit:</strong> {synergy.benefit}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (!product) return null;
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -804,6 +964,12 @@ const ProductDetailPage = () => {
                     {product.description || "No description available for this product."}
                   </p>
                 </div>
+
+                {/* TAMBAH WARNING SECTION DI SINI */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Safety & Interactions</h3>
+                    <WarningSection />
+                  </div>
 
                 {product.suitable_for_skin_types && (
                   <div>

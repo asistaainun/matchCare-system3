@@ -369,20 +369,38 @@ class SkincareWarningEngine {
         
         // 1. Get product ingredients
         const productQuery = `
-            SELECT p.name as product_name, pi.ingredient_name
+            SELECT p.name as product_name, p.ingredient_list 
             FROM products p
-            JOIN product_ingredients pi ON p.id = pi.product_id  
             WHERE p.id = $1
         `;
         
         const productResult = await pool.query(productQuery, [productId]);
         
         if (productResult.rows.length === 0) {
-            return { warnings: [], productName: null };
+            return { warnings: [], synergies: [], productName: null, ingredients: [] };
         }
 
-        const productName = productResult.rows[0].product_name;
-        const ingredients = productResult.rows.map(row => row.ingredient_name.toLowerCase());
+        const product = productResult.rows[0];
+        const productName = product.product_name;
+        
+        // 2. Parse ingredients from ingredient_list (CSV format)
+        let ingredients = [];
+        if (product.ingredient_list) {
+            ingredients = product.ingredient_list
+                .split(',')
+                .map(ing => ing.trim().toLowerCase())
+                .filter(ing => ing.length > 2);
+        }
+        
+        // Add key ingredients if available
+        if (product.key_ingredients_csv) {
+            const keyIngs = product.key_ingredients_csv
+                .split(',')
+                .map(ing => ing.trim().toLowerCase());
+            ingredients.push(...keyIngs);
+        }
+
+        ingredients = [...new Set(ingredients)];
         
         console.log(`📝 Product: ${productName}, Ingredients: ${ingredients.length}`);
 

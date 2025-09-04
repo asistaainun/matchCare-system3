@@ -106,7 +106,7 @@ const warningRoutes = require('./routes/warnings');
 app.use('/api/warnings', warningRoutes);
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
-
+app.use('/api/education', require('./routes/education'));
 // ===== HEALTH CHECK ENDPOINTS =====
 
 app.get('/api/endpoints/status', (req, res) => {

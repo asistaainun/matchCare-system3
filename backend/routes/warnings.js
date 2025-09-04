@@ -40,43 +40,43 @@ router.get('/test', async (req, res) => {
 });
 
 // GET /api/warnings/product/:id - Get warnings untuk single product
-router.get('/product/:id', async (req, res) => {
-    try {
-        const productId = req.params.id;
+// router.get('/product/:id', async (req, res) => {
+//     try {
+//         const productId = req.params.id;
         
-        // Get product data
-        const productQuery = 'SELECT * FROM products WHERE id = $1';
-        const productResult = await pool.query(productQuery, [productId]);
+//         // Get product data
+//         const productQuery = 'SELECT * FROM products WHERE id = $1';
+//         const productResult = await pool.query(productQuery, [productId]);
         
-        if (productResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Product not found'
-            });
-        }
+//         if (productResult.rows.length === 0) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Product not found'
+//             });
+//         }
         
-        const product = productResult.rows[0];
+//         const product = productResult.rows[0];
         
-        // Analyze product safety
-        const warnings = await warningEngine.analyzeProductSafety(product);
+//         // Analyze product safety
+//         const warnings = await warningEngine.analyzeProductSafety(product);
         
-        res.json({
-            success: true,
-            productId: productId,
-            productName: product.name || product.product_name,
-            warnings: warnings,
-            warningCount: warnings.length
-        });
+//         res.json({
+//             success: true,
+//             productId: productId,
+//             productName: product.name || product.product_name,
+//             warnings: warnings,
+//             warningCount: warnings.length
+//         });
         
-    } catch (error) {
-        console.error('Error analyzing product safety:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to analyze product safety',
-            error: error.message
-        });
-    }
-});
+//     } catch (error) {
+//         console.error('Error analyzing product safety:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Failed to analyze product safety',
+//             error: error.message
+//         });
+//     }
+// });
 
 // GET /api/warnings/product/:productId - Get warnings untuk specific product
 router.get('/product/:productId', async (req, res) => {
