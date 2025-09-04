@@ -78,6 +78,48 @@ router.get('/product/:id', async (req, res) => {
     }
 });
 
+// GET /api/warnings/product/:productId - Get warnings untuk specific product
+router.get('/product/:productId', async (req, res) => {
+    try {
+        const productId = parseInt(req.params.productId);
+        
+        if (!productId || isNaN(productId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid product ID'
+            });
+        }
+        
+        console.log(`🔍 Getting warnings for product: ${productId}`);
+        
+        const warningData = await warningEngine.getProductWarnings(productId);
+        
+        res.json({
+            success: true,
+            productId: productId,
+            productName: warningData.productName,
+            data: {
+                warnings: warningData.warnings,
+                synergies: warningData.synergies,
+                ingredients: warningData.ingredients,
+                summary: {
+                    warningCount: warningData.warningCount,
+                    synergyCount: warningData.synergyCount,
+                    totalIngredients: warningData.ingredients.length
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting product warnings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get product warnings',
+            error: error.message
+        });
+    }
+});
+
 router.get('/test-conflict', async (req, res) => {
     try {
         console.log('🧪 Testing manual conflict detection...');

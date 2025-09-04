@@ -362,6 +362,204 @@ class SkincareWarningEngine {
             return false;
         }
     }
+
+    async getProductWarnings(productId) {
+    try {
+        console.log(`🔍 Getting warnings for product ID: ${productId}`);
+        
+        // 1. Get product ingredients
+        const productQuery = `
+            SELECT p.name as product_name, pi.ingredient_name
+            FROM products p
+            JOIN product_ingredients pi ON p.id = pi.product_id  
+            WHERE p.id = $1
+        `;
+        
+        const productResult = await pool.query(productQuery, [productId]);
+        
+        if (productResult.rows.length === 0) {
+            return { warnings: [], productName: null };
+        }
+
+        const productName = productResult.rows[0].product_name;
+        const ingredients = productResult.rows.map(row => row.ingredient_name.toLowerCase());
+        
+        console.log(`📝 Product: ${productName}, Ingredients: ${ingredients.length}`);
+
+        // 2. Check for internal conflicts (ingredients in same product)
+        const warnings = [];
+        
+        for (let i = 0; i < ingredients.length; i++) {
+            for (let j = i + 1; j < ingredients.length; j++) {
+                const conflict = await this.checkIngredientConflict(ingredients[i], ingredients[j]);
+                if (conflict) {
+                    warnings.push({
+                        type: 'internal_conflict',
+                        ingredient1: ingredients[i],
+                        ingredient2: ingredients[j],
+                        severity: conflict.severity,
+                        warning_message: conflict.message,
+                        recommendation: conflict.recommendation
+                    });
+                }
+            }
+        }
+
+        // 3. Check for common external conflicts
+        const commonConflicts = await this.getCommonExternalConflicts(ingredients);
+        warnings.push(...commonConflicts);
+
+        // 4. Check for synergies (positive interactions)
+        const synergies = await this.getIngredientSynergies(ingredients);
+
+        console.log(`✅ Found ${warnings.length} warnings, ${synergies.length} synergies`);
+        
+        return {
+            productName,
+            ingredients,
+            warnings,
+            synergies,
+            warningCount: warnings.length,
+            synergyCount: synergies.length
+        };
+        
+    } catch (error) {
+        console.error('Error getting product warnings:', error);
+        throw error;
+    }
+}
+
+async checkIngredientConflict(ingredient1, ingredient2) {
+    try {
+        // Query database untuk conflicts
+        const conflictQuery = `
+            SELECT ir.relationship_type, ir.strength, ir.notes,
+                   i1.name as ing1, i2.name as ing2
+            FROM ingredient_relationships ir
+            JOIN ingredients i1 ON ir.ingredient1_id = i1.id
+            JOIN ingredients i2 ON ir.ingredient2_id = i2.id
+            WHERE (LOWER(i1.name) LIKE $1 AND LOWER(i2.name) LIKE $2)
+               OR (LOWER(i1.name) LIKE $2 AND LOWER(i2.name) LIKE $1)
+            AND ir.relationship_type = 'incompatibleWith'
+        `;
+        
+        const result = await pool.query(conflictQuery, [`%${ingredient1}%`, `%${ingredient2}%`]);
+        
+        if (result.rows.length > 0) {
+            const conflict = result.rows[0];
+            return {
+                severity: conflict.strength || 'medium',
+                message: conflict.notes || `${conflict.ing1} dan ${conflict.ing2} mungkin tidak bisa bekerja dengan baik jika digabung`,
+                recommendation: this.getConflictRecommendation(ingredient1, ingredient2)
+            };
+        }
+        
+        // Fallback ke hardcoded rules kalau database kosong
+        return this.getHardcodedConflict(ingredient1, ingredient2);
+        
+    } catch (error) {
+        console.error('Error checking conflict:', error);
+        return null;
+    }
+}
+
+getHardcodedConflict(ing1, ing2) {
+    // Hardcoded conflict rules sebagai fallback
+    const conflicts = {
+        'retinol,vitamin c': {
+            severity: 'high',
+            message: 'Retinol dan Vitamin C dapat menyebabkan iritasi jika digunakan bersamaan',
+            recommendation: 'Gunakan Retinol di malam hari dan Vitamin C di pagi hari'
+        },
+        'aha,bha': {
+            severity: 'medium', 
+            message: 'AHA dan BHA bersama-sama dapat menyebabkan over-exfoliation',
+            recommendation: 'Penggunaan bergantian - gunakan pada hari atau waktu yang berbeda'
+        },
+        'retinol,aha': {
+            severity: 'high',
+            message: 'Retinol dan AHA dapat menyebabkan iritasi yang parah',
+            recommendation: 'Gunakan pada malam yang bergantian, mulai dengan konsentrasi yang lebih rendah'
+        }
+    };
+    
+    const key1 = `${ing1},${ing2}`;
+    const key2 = `${ing2},${ing1}`;
+    
+    return conflicts[key1] || conflicts[key2] || null;
+}
+
+async getCommonExternalConflicts(ingredients) {
+    // Check ingredients yg conflict dengan produk lain yg umum dipakai
+    const warnings = [];
+    
+    for (const ingredient of ingredients) {
+        if (ingredient.includes('retinol')) {
+            warnings.push({
+                type: 'external_warning',
+                ingredient1: ingredient,
+                ingredient2: 'vitamin c products',
+                severity: 'medium',
+                warning_message: 'Produk ini mengandung Retinol yang tidak boleh digunakan bersamaan dengan produk Vitamin C',
+                recommendation: 'Gunakan produk ini di malam hari, produk Vitamin C di pagi hari'
+            });
+        }
+        
+        if (ingredient.includes('aha') || ingredient.includes('glycolic')) {
+            warnings.push({
+                type: 'timing_warning',
+                ingredient1: ingredient,
+                severity: 'low',
+                warning_message: 'Produk ini mengandung AHA - disarankan untuk digunakan di malam hari',
+                recommendation: 'Gunakan di malam hari, selalu gunakan tabir surya di siang hari'
+            });
+        }
+    }
+    
+    return warnings;
+}
+
+async getIngredientSynergies(ingredients) {
+    const synergies = [];
+    
+    // Check for beneficial combinations
+    const hasCeramides = ingredients.some(ing => ing.includes('ceramide'));
+    const hasNiacinamide = ingredients.some(ing => ing.includes('niacinamide'));
+    const hasHyaluronic = ingredients.some(ing => ing.includes('hyaluronic'));
+    
+    if (hasCeramides && hasNiacinamide) {
+        synergies.push({
+            type: 'synergy',
+            ingredients: ['ceramides', 'niacinamide'],
+            message: 'Ceramides dan Niacinamide bekerja sama untuk memperkuat barrier kulit',
+            benefit: 'Perbaikan barrier yang lebih baik dan hidrasi'
+        });
+    }
+    
+    if (hasHyaluronic && hasNiacinamide) {
+        synergies.push({
+            type: 'synergy',
+            ingredients: ['hyaluronic acid', 'niacinamide'],
+            message: 'Hyaluronic Acid dan Niacinamide saling melengkapi dengan sempurna',
+            benefit: 'Hidrasi superior dengan efek meminimalkan pori'
+        });
+    }
+    
+    return synergies;
+}
+
+getConflictRecommendation(ing1, ing2) {
+    // Generate smart recommendations
+    if (ing1.includes('retinol') || ing2.includes('retinol')) {
+        return 'Pertimbangkan untuk menggunakan produk retinol hanya di malam hari, terpisah dari bahan aktif lainnya';
+    }
+    
+    if (ing1.includes('acid') || ing2.includes('acid')) {
+        return 'Gunakan asam pada hari yang bergantian atau waktu yang berbeda untuk mencegah iritasi';
+    }
+
+    return 'Konsultasikan dengan dokter kulit untuk saran pribadi tentang penggabungan bahan-bahan ini';
+}
 }
 
 
