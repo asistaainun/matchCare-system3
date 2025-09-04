@@ -367,97 +367,212 @@ router.get('/:id', async (req, res) => {
       }
       
       const product = result.rows[0];
-      
-      // FIX: Get product ingredients with proper error handling
-      let ingredients = [];
-      try {
-        const ingredientsQuery = `
-          SELECT 
-            i.name,
-            i.actual_functions,
-            i.embedded_functions,
-            i.functional_categories,
-            i.is_key_ingredient,
-            i.what_it_does,
-            i.benefit,
-            i.explanation,
-            i.safety,
-            i.usage_instructions,
-            i.pregnancy_safe,
-            i.alcohol_free,
-            i.fragrance_free,
-            i.silicone_free,
-            i.sulfate_free,
-            i.paraben_free,
-            pi.is_key_ingredient as product_key_ingredient,
-            pi.position
-          FROM product_ingredients pi
-          JOIN ingredients i ON pi.ingredient_id = i.id
-          WHERE pi.product_id = $1
-          ORDER BY pi.position ASC, i.name ASC
-        `;
+      console.log(`🔍 Loading product: ${product.name}`);
+
+      // Parse full ingredient list from CSV
+      if (product.ingredient_list) {
+        const cleanedList = product.ingredient_list
+          .replace(/^(KOMPOSISI\s*:?\s*|INGREDIENTS\s*:?\s*|BAHAN\s*:?\s*|INCI\s*:?\s*)/i, "")
+          .trim();
         
-        const ingredientsResult = await client.query(ingredientsQuery, [parseInt(id)]);
-        ingredients = ingredientsResult.rows;
-      } catch (ingredientError) {
-        console.warn('⚠️ Could not load ingredients for product:', ingredientError.message);
+        allIngredients = cleanedList
+          .split(/[,|;]/)
+          .map(ing => ing.trim())
+          .filter(ing => ing.length > 2 && !ing.match(/^(dll|etc|dan|and|or)$/i))
+          .map((name, index) => ({
+            name: name,
+            position: index + 1,
+            is_key: false, // Will be updated below
+            source: 'csv_ingredient_list'
+          }));
+        
+        console.log(`📋 Parsed ${allIngredients.length} ingredients from CSV`);
       }
       
+      // 3. Get key ingredients with details from key_ingredient_types
+      if (product.key_ingredients_csv) {
+        const keyIngredientNames = product.key_ingredients_csv
+          .split(/[,|;]/)
+          .map(name => name.trim())
+          .filter(name => name.length > 2);
+        
+        console.log(`🔑 Key ingredients from CSV: ${keyIngredientNames.join(', ')}`);
+        
+        // Query key ingredient details
+        if (keyIngredientNames.length > 0) {
+          const keyIngredientsQuery = `
+            SELECT 
+              kit.id,
+              kit.name,
+              kit.slug,
+              kit.display_name,
+              kit.category,
+              kit.description,
+              kit.ontology_uri
+            FROM key_ingredient_types kit
+            WHERE LOWER(kit.name) = ANY($1) OR LOWER(kit.display_name) = ANY($1)
+            ORDER BY kit.name
+          `;
+          
+          const lowerKeyNames = keyIngredientNames.map(name => name.toLowerCase());
+          const keyResult = await client.query(keyIngredientsQuery, [lowerKeyNames]);
+          
+          console.log(`🔍 Found ${keyResult.rows.length} key ingredient details in database`);
+          
+          // Match key ingredients with their details
+          keyIngredientsWithDetails = keyIngredientNames.map(keyName => {
+            const keyDetails = keyResult.rows.find(row => 
+              row.name.toLowerCase() === keyName.toLowerCase() ||
+              row.display_name?.toLowerCase() === keyName.toLowerCase()
+            );
+            
+            return {
+              name: keyName,
+              is_key: true,
+              details: keyDetails ? {
+                id: keyDetails.id,
+                display_name: keyDetails.display_name,
+                category: keyDetails.category,
+                description: keyDetails.description,
+                slug: keyDetails.slug,
+                ontology_uri: keyDetails.ontology_uri,
+                source: 'key_ingredient_types_table'
+              } : {
+                source: 'csv_only',
+                description: 'Key ingredient details not found in database'
+              }
+            };
+          });
+          
+          // Mark key ingredients in full ingredient list
+          allIngredients.forEach(ingredient => {
+            const isKey = keyIngredientNames.some(keyName => 
+              keyName.toLowerCase() === ingredient.name.toLowerCase()
+            );
+            if (isKey) {
+              ingredient.is_key = true;
+            }
+          });
+        }
+      }
+      
+      // 4. Alternative: Get key ingredients from product_key_ingredients table if available
+      let keyIngredientsFromTable = [];
+      try {
+        const productKeyIngredientsQuery = `
+          SELECT 
+            kit.id,
+            kit.name,
+            kit.display_name,
+            kit.category,
+            kit.description,
+            kit.slug,
+            kit.ontology_uri,
+            pki.notes
+          FROM product_key_ingredients pki
+          JOIN key_ingredient_types kit ON pki.key_type_id = kit.id
+          WHERE pki.product_id = $1
+          ORDER BY kit.name
+        `;
+        
+        const tableResult = await client.query(productKeyIngredientsQuery, [parseInt(id)]);
+        keyIngredientsFromTable = tableResult.rows;
+        
+        if (keyIngredientsFromTable.length > 0) {
+          console.log(`🔗 Found ${keyIngredientsFromTable.length} key ingredients from product_key_ingredients table`);
+          
+          // If table has more complete data, use it instead
+          if (keyIngredientsFromTable.length > keyIngredientsWithDetails.length) {
+            keyIngredientsWithDetails = keyIngredientsFromTable.map(row => ({
+              name: row.display_name || row.name,
+              is_key: true,
+              details: {
+                id: row.id,
+                display_name: row.display_name,
+                category: row.category,
+                description: row.description,
+                slug: row.slug,
+                ontology_uri: row.ontology_uri,
+                notes: row.notes,
+                source: 'product_key_ingredients_table'
+              }
+            }));
+          }
+        }
+      } catch (tableError) {
+        console.log('ℹ️ No key ingredients found in product_key_ingredients table, using CSV data');
+      }
+      
+      // 5. Format final response
       const formattedProduct = {
         id: product.id,
         name: product.name,
         brand: {
-          name: product.brand_name,
+          id: product.brand_id,
+          name: product.brand_name || 'Unknown Brand',
           description: product.brand_description
         },
         product_type: product.product_type,
         description: product.description,
         how_to_use: product.how_to_use,
-        category: product.main_category,
+        main_category: product.main_category,
         subcategory: product.subcategory,
-        image: product.image_urls || '/images/placeholder-product.jpg',
-        image_urls: product.image_urls ? product.image_urls.split(',') : [],
-        suitable_for: product.suitable_for_skin_types || [],
-        addresses: product.addresses_concerns || [],
-        formulation: {
-          alcohol_free: product.alcohol_free,
-          fragrance_free: product.fragrance_free,
-          paraben_free: product.paraben_free,
-          sulfate_free: product.sulfate_free,
-          silicone_free: product.silicone_free
-        },
-        ingredients: ingredients.map(ing => ({
-          name: ing.name,
-          what_it_does: ing.what_it_does,
-          functions: ing.actual_functions ? ing.actual_functions.split(',') : [],
-          categories: ing.functional_categories ? ing.functional_categories.split(',') : [],
-          is_key: ing.product_key_ingredient || ing.is_key_ingredient,
-          benefit: ing.benefit,
-          explanation: ing.explanation,
-          safety: ing.safety,
-          usage_instructions: ing.usage_instructions,
-          safety_flags: {
-            pregnancy_safe: ing.pregnancy_safe,
-            alcohol_free: ing.alcohol_free,
-            fragrance_free: ing.fragrance_free,
-            silicone_free: ing.silicone_free,
-            sulfate_free: ing.sulfate_free,
-            paraben_free: ing.paraben_free
-          },
-          position: ing.position
-        })),
+        
+        // Images
+        image_urls: product.image_urls,
+        local_image_path: product.local_image_path,
+        
+        // ALL INGREDIENTS - from CSV parsing
+        ingredients: allIngredients,
+        
+        // KEY INGREDIENTS - with detailed info from key_ingredient_types
+        key_ingredients: keyIngredientsWithDetails,
+        
+        // Separate regular ingredients
+        regular_ingredients: allIngredients.filter(ing => !ing.is_key),
+        
+        // Raw CSV data for reference
+        ingredient_list_raw: product.ingredient_list,
+        key_ingredients_csv_raw: product.key_ingredients_csv,
+        
+        // Product properties
+        suitable_for_skin_types: product.suitable_for_skin_types,
+        addresses_concerns: product.addresses_concerns,
+        
+        // Safety flags
+        alcohol_free: product.alcohol_free,
+        fragrance_free: product.fragrance_free,
+        paraben_free: product.paraben_free,
+        sulfate_free: product.sulfate_free,
+        silicone_free: product.silicone_free,
+        
+        // Additional info
         bpom_number: product.bpom_number,
-        ingredient_list: product.ingredient_list,
         product_url: product.product_url,
+        
+        // Metadata
         created_at: product.created_at,
-        updated_at: product.updated_at
+        updated_at: product.updated_at,
+        data_source: 'csv_plus_key_ingredient_types',
+        total_ingredients: allIngredients.length,
+        key_ingredients_count: keyIngredientsWithDetails.length,
+        key_ingredients_with_details: keyIngredientsWithDetails.filter(ki => ki.details.source !== 'csv_only').length
       };
       
-      console.log(`✅ Product detail loaded: ${product.name}`);
+      console.log(`✅ Product loaded successfully:`);
+      console.log(`   - Total ingredients: ${allIngredients.length}`);
+      console.log(`   - Key ingredients: ${keyIngredientsWithDetails.length}`);
+      console.log(`   - Key ingredients with details: ${formattedProduct.key_ingredients_with_details}`);
       
       res.json({
         success: true,
-        product: formattedProduct
+        product: formattedProduct,
+        metadata: {
+          parsing_method: 'csv_plus_key_ingredient_types',
+          total_ingredients: allIngredients.length,
+          key_ingredients: keyIngredientsWithDetails.length,
+          key_ingredients_source: keyIngredientsFromTable.length > 0 ? 'database_table' : 'csv_parsed'
+        }
       });
       
     } finally {
@@ -473,7 +588,7 @@ router.get('/:id', async (req, res) => {
     });
   }
 });
-
+      
 // Get product categories for filtering
 router.get('/meta/categories', async (req, res) => {
   try {
@@ -892,5 +1007,24 @@ router.post('/:id/compatibility-check', async (req, res) => {
     });
   }
 });
+
+// Helper function to clean ingredient names
+function cleanIngredientName(name) {
+  return name
+    .trim()
+    .replace(/^\d+\.\s*/, "") // Remove numbering like "1. "
+    .replace(/^-\s*/, "") // Remove dashes "- "
+    .replace(/\s+/g, " ") // Normalize spaces
+    .replace(/[()[\]]/g, "") // Remove brackets
+    .trim();
+}
+
+// Helper function to normalize ingredient name for matching
+function normalizeIngredientName(name) {
+  return name
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 module.exports = router;

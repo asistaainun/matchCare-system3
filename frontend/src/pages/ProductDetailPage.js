@@ -11,6 +11,7 @@ const ProductDetailPage = () => {
   // State management
   const [product, setProduct] = useState(null);
   const [ingredients, setIngredients] = useState([]);
+  const [keyIngredients, setKeyIngredients] = useState([]);
   const [safetyAnalysis, setSafetyAnalysis] = useState(null);
   const [similarProducts, setSimilarProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +59,10 @@ const ProductDetailPage = () => {
 
       console.log("✅ Processed Product:", product);
       console.log("🔍 DETAILED INGREDIENT DEBUG:");
+      console.log("📊 Data source:", product.data_source);
+      console.log("📋 Total ingredients:", product.total_ingredients);
+      console.log("🔑 Key ingredients:", product.key_ingredients_count);
+
       console.log("- product.ingredients exists:", !!product.ingredients);
       console.log(
         "- product.ingredients length:",
@@ -79,6 +84,8 @@ const ProductDetailPage = () => {
         "- product.key_ingredients preview:",
         product.key_ingredients?.substring(0, 50)
       );
+
+
       if (product.ingredients) {
         console.log("🔍 Backend ingredients array:", product.ingredients);
       }
@@ -92,32 +99,109 @@ const ProductDetailPage = () => {
       if (product.key_ingredients) {
         console.log("🔍 Raw key_ingredients (full):", product.key_ingredients);
       }
+
+            if (!productData.success || !productData.product) {
+        throw new Error("Product data not found in response");
+      }
+
       setProduct(product);
 
       // 2. Load ingredient analysis - DENGAN FALLBACK
       console.log("🔍 Checking ingredient sources:");
 
       if (product.ingredients && product.ingredients.length > 0) {
-        // Backend sudah kirim array ingredients (FULL ONTOLOGY)
-        await parseIngredientsFromBackend(product.ingredients);
-      } else if (product.ingredient_list) {
-        // ONTOLOGY FALLBACK: Parse + Query ontology untuk SEMUA ingredients
-        await parseWithOntologyFirst(
-          product.ingredient_list,
-          product.key_ingredients
-        );
+        console.log(`📋 Using ${product.ingredients.length} full ingredients from backend`);
+        setIngredients(product.ingredients);
       } else {
-        console.log("⚠️ No ingredients found in any format");
+        console.log("⚠️ No ingredients array from backend, setting empty");
         setIngredients([]);
       }
 
-      // 3. Load similar products (ontology recommendations)
+      if (product.key_ingredients && product.key_ingredients.length > 0) {
+        console.log(`🔑 Using ${product.key_ingredients.length} key ingredients from backend`);
+        setKeyIngredients(product.key_ingredients);
+      } else {
+        console.log("⚠️ No key ingredients array from backend, setting empty");
+        setKeyIngredients([]);
+      }
+
+
+      // Generate safety analysis
+      await performSafetyAnalysis(product);
+
+      // Load similar products
       await loadSimilarProducts(product);
     } catch (error) {
       console.error("❌ Product detail error:", error);
       setError(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+
+  const performSafetyAnalysis = async (product) => {
+    try {
+      console.log("🛡️ Performing safety analysis...");
+
+      const safetyFlags = [];
+      const safetyProperties = [];
+
+      // Product-level safety properties
+      if (product.alcohol_free) safetyProperties.push("Alcohol Free");
+      if (product.fragrance_free) safetyProperties.push("Fragrance Free");
+      if (product.paraben_free) safetyProperties.push("Paraben Free");
+      if (product.sulfate_free) safetyProperties.push("Sulfate Free");
+      if (product.silicone_free) safetyProperties.push("Silicone Free");
+
+      // Key ingredient-based analysis
+      if (product.key_ingredients) {
+        product.key_ingredients.forEach((keyIngredient) => {
+          const name = keyIngredient.name.toLowerCase();
+          
+          // Check for specific ingredient warnings
+          if (name.includes('retinol') || name.includes('retinoid')) {
+            safetyFlags.push({
+              type: "warning",
+              ingredient: keyIngredient.name,
+              message: `${keyIngredient.name} - use at night only and avoid during pregnancy`,
+              source: "ingredient_analysis"
+            });
+          }
+          
+          if (name.includes('acid') && !name.includes('hyaluronic')) {
+            safetyFlags.push({
+              type: "info",
+              ingredient: keyIngredient.name,
+              message: `${keyIngredient.name} - use sunscreen and start slowly`,
+              source: "ingredient_analysis"
+            });
+          }
+          
+          if (name.includes('vitamin c') || name.includes('ascorbic')) {
+            safetyFlags.push({
+              type: "info",
+              ingredient: keyIngredient.name,
+              message: `${keyIngredient.name} - best used in morning with sunscreen`,
+              source: "ingredient_analysis"
+            });
+          }
+        });
+      }
+
+      setSafetyAnalysis({
+        overallSafety: safetyFlags.some(flag => flag.type === 'warning') ? 'Caution Required' : 'Safe',
+        flags: safetyFlags,
+        properties: safetyProperties,
+        analysis: `Safety analysis of ${product.key_ingredients_count} key ingredients`,
+        analysisMethod: "CSV_PLUS_KEY_INGREDIENT_TYPES",
+        confidence: "high"
+      });
+
+      console.log(`✅ Safety analysis complete: ${safetyFlags.length} flags, ${safetyProperties.length} properties`);
+
+    } catch (error) {
+      console.error("❌ Safety analysis error:", error);
     }
   };
 
@@ -518,22 +602,18 @@ const ProductDetailPage = () => {
     try {
       console.log("🔍 Finding similar products...");
 
-      // Use category and key ingredients for similarity
       const params = new URLSearchParams({
         category: currentProduct.main_category || "",
         limit: "4",
       });
 
-      const response = await fetch(
-        `http://localhost:5000/api/products?${params}`
-      );
+      const response = await fetch(`http://localhost:5000/api/products?${params}`);
       const data = await response.json();
 
       if (data.success) {
-        // Filter out current product and limit results
-        const similar = data.data
-          .filter((p) => p.id !== currentProduct.id)
-          .slice(0, 4);
+        const similar = data.products
+          ?.filter(p => p.id !== currentProduct.id)
+          .slice(0, 4) || [];
 
         setSimilarProducts(similar);
         console.log(`✅ Found ${similar.length} similar products`);
@@ -552,9 +632,6 @@ const ProductDetailPage = () => {
   const getImageUrl = () => {
     if (!product) return "/images/placeholder-product.jpg";
 
-    if (product.image_urls && !imageError) {
-      return product.image_urls;
-    }
     if (product.image_urls && !imageError) {
       const images = product.image_urls.split(",");
       return images[0]?.trim();
@@ -580,9 +657,7 @@ const ProductDetailPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Product Not Found
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="space-x-4">
             <button
@@ -610,13 +685,9 @@ const ProductDetailPage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-blue-600">
-            Home
-          </Link>
+          <Link to="/" className="hover:text-blue-600">Home</Link>
           <span>›</span>
-          <Link to="/products" className="hover:text-blue-600">
-            Products
-          </Link>
+          <Link to="/products" className="hover:text-blue-600">Products</Link>
           <span>›</span>
           <span className="text-gray-900">{product.name}</span>
         </nav>
@@ -650,7 +721,7 @@ const ProductDetailPage = () => {
               {/* Brand & Category */}
               <div className="text-sm text-gray-600">
                 <span className="font-medium">
-                  {product.brand_name || product.brand?.name || "Unknown Brand"}
+                  {product.brand?.name || "Unknown Brand"}
                 </span>
                 {product.product_type && (
                   <>
@@ -661,9 +732,7 @@ const ProductDetailPage = () => {
               </div>
 
               {/* Product Name */}
-              <h1 className="text-3xl font-bold text-gray-900">
-                {product.name}
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">{product.name}</h1>
 
               {/* Categories */}
               <div className="flex flex-wrap gap-2">
@@ -679,20 +748,33 @@ const ProductDetailPage = () => {
                 )}
               </div>
 
+              {/* Data Source Badge */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center">
+                  <span className="text-blue-600 text-sm mr-2">📊</span>
+                  <div>
+                    <span className="text-sm font-medium text-blue-800">
+                      Data Source: {product.data_source?.replace(/_/g, ' ').toUpperCase()}
+                    </span>
+                    <p className="text-xs text-blue-600">
+                      {product.total_ingredients} total • {product.key_ingredients_count} key ingredients
+                      {product.key_ingredients_with_details !== undefined && 
+                        ` • ${product.key_ingredients_with_details} with detailed info`
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* BPOM Registration */}
               {product.bpom_number && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div className="flex items-center">
                     <span className="text-green-600 text-xl mr-3">🏛️</span>
                     <div>
-                      <h3 className="font-semibold text-green-800">
-                        BPOM Registered
-                      </h3>
+                      <h3 className="font-semibold text-green-800">BPOM Registered</h3>
                       <p className="text-sm text-green-700">
-                        Registration Number:{" "}
-                        <span className="font-mono font-medium">
-                          {product.bpom_number}
-                        </span>
+                        Registration Number: <span className="font-mono font-medium">{product.bpom_number}</span>
                       </p>
                     </div>
                   </div>
@@ -702,9 +784,7 @@ const ProductDetailPage = () => {
               {/* Product Properties */}
               {safetyAnalysis && safetyAnalysis.properties.length > 0 && (
                 <div className="border-l-4 border-green-500 bg-green-50 p-4 rounded">
-                  <h3 className="font-semibold text-green-800 mb-2">
-                    What's Inside (and What Isn't)
-                  </h3>
+                  <h3 className="font-semibold text-green-800 mb-2">What's Inside (and What Isn't)</h3>
                   <div className="flex flex-wrap gap-2">
                     {safetyAnalysis.properties.map((prop, index) => (
                       <span
@@ -721,14 +801,11 @@ const ProductDetailPage = () => {
               {/* Safety Analysis */}
               {safetyAnalysis && safetyAnalysis.flags.length > 0 && (
                 <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-                  <h3 className="font-semibold text-yellow-800 mb-2">
-                    Safety Information
-                  </h3>
+                  <h3 className="font-semibold text-yellow-800 mb-2">Usage Recommendations</h3>
                   <div className="space-y-2">
                     {safetyAnalysis.flags.map((flag, index) => (
                       <div key={index} className="text-sm text-yellow-700">
-                        <strong>{flag.type === "warning" ? "⚠️" : "ℹ️"}</strong>{" "}
-                        {flag.message}
+                        <strong>{flag.type === "warning" ? "⚠️" : "ℹ️"}</strong> {flag.message}
                       </div>
                     ))}
                   </div>
@@ -786,12 +863,9 @@ const ProductDetailPage = () => {
             {activeTab === "overview" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">
-                    Product Description
-                  </h3>
+                  <h3 className="text-lg font-semibold mb-3">Product Description</h3>
                   <p className="text-gray-700 leading-relaxed">
-                    {product.description ||
-                      "No description available for this product."}
+                    {product.description || "No description available for this product."}
                   </p>
                 </div>
 
@@ -799,36 +873,50 @@ const ProductDetailPage = () => {
                   <div>
                     <h3 className="text-lg font-semibold mb-3">Suitable For</h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.suitable_for_skin_types
-                        .split(",")
-                        .map((skinType, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
-                          >
-                            {skinType.trim()} Skin
-                          </span>
-                        ))}
+                      {Array.isArray(product.suitable_for_skin_types) 
+                        ? product.suitable_for_skin_types.map((skinType, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                            >
+                              {skinType} Skin
+                            </span>
+                          ))
+                        : product.suitable_for_skin_types.split(",").map((skinType, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
+                            >
+                              {skinType.trim()} Skin
+                            </span>
+                          ))
+                      }
                     </div>
                   </div>
                 )}
 
                 {product.addresses_concerns && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">
-                      Addresses Concerns
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-3">Addresses Concerns</h3>
                     <div className="flex flex-wrap gap-2">
-                      {product.addresses_concerns
-                        .split(",")
-                        .map((concern, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm"
-                          >
-                            {concern.trim()}
-                          </span>
-                        ))}
+                      {Array.isArray(product.addresses_concerns) 
+                        ? product.addresses_concerns.map((concern, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm"
+                            >
+                              {concern}
+                            </span>
+                          ))
+                        : product.addresses_concerns.split(",").map((concern, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm"
+                            >
+                              {concern.trim()}
+                            </span>
+                          ))
+                      }
                     </div>
                   </div>
                 )}
@@ -837,74 +925,139 @@ const ProductDetailPage = () => {
 
             {activeTab === "ingredients" && (
               <div className="space-y-6">
+                {/* Key Ingredients Section */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Key Ingredients
+                    Key Ingredients ({keyIngredients.length})
                   </h3>
 
-                  <div className="space-y-4">
-                    {ingredients
-                      .filter((ing) => ing.isKey)
-                      .map((ingredient, index) => (
+                  {keyIngredients.length > 0 ? (
+                    <div className="space-y-4">
+                      {keyIngredients.map((ingredient, index) => (
                         <div
                           key={index}
                           className="border border-gray-200 rounded-lg p-4"
                         >
-                          <h4 className="font-semibold text-gray-900 mb-2">
-                            {ingredient.name}
-                          </h4>
-
-                          {ingredient.ontologyData ? (
-                            <div className="space-y-2 text-sm">
-                              {ingredient.ontologyData.function && (
-                                <p>
-                                  <strong>Function:</strong>{" "}
-                                  {ingredient.ontologyData.function}
-                                </p>
-                              )}
-                              {ingredient.ontologyData.benefit && (
-                                <p>
-                                  <strong>Benefit:</strong>{" "}
-                                  {ingredient.ontologyData.benefit}
-                                </p>
-                              )}
-                              {ingredient.ontologyData.explanation && (
-                                <p>
-                                  <strong>Details:</strong>{" "}
-                                  {ingredient.ontologyData.explanation}
-                                </p>
-                              )}
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="font-semibold text-gray-900 text-lg">
+                              {ingredient.details?.display_name || ingredient.name}
+                            </h4>
+                            <div className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              Key Ingredient
                             </div>
-                          ) : (
-                            <p className="text-sm text-gray-600">
-                              Key ingredient - ontology analysis pending
-                            </p>
+                          </div>
+
+                          {/* Key Ingredient Details */}
+                          {ingredient.details && ingredient.details.source !== 'csv_only' && (
+                            <div className="space-y-3">
+                              {/* Category */}
+                              {ingredient.details.category && (
+                                <div>
+                                  <span className="text-sm font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded">
+                                    {ingredient.details.category}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Description */}
+                              {ingredient.details.description && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-700">What it does: </span>
+                                  <span className="text-sm text-gray-600">
+                                    {ingredient.details.description}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Notes if available */}
+                              {ingredient.details.notes && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-700">Notes: </span>
+                                  <span className="text-sm text-gray-600">
+                                    {ingredient.details.notes}
+                                  </span>
+                                </div>
+                              )}
+
+                              {/* Data source indicator */}
+                              <div className="pt-2 border-t border-gray-100">
+                                <span className="text-xs text-gray-500">
+                                  Source: {ingredient.details.source.replace(/_/g, ' ')}
+                                  {ingredient.details.slug && ` • Slug: ${ingredient.details.slug}`}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* No details available */}
+                          {(!ingredient.details || ingredient.details.source === 'csv_only') && (
+                            <div className="text-sm text-gray-600 italic">
+                              Key ingredient from product label - detailed information not available in database
+                            </div>
                           )}
                         </div>
                       ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 italic">
+                      No key ingredients data available.
+                    </p>
+                  )}
                 </div>
 
+                {/* Full Ingredient List */}
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Full Ingredient List
+                    Full Ingredient List ({ingredients.length} total)
                   </h3>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex flex-wrap gap-1">
-                      {ingredients.map((ingredient, index) => (
-                        <span
-                          key={index}
-                          className={`inline-block px-2 py-1 rounded text-xs ${
-                            ingredient.isKey
-                              ? "bg-blue-100 text-blue-700 font-medium"
-                              : "bg-gray-200 text-gray-700"
-                          }`}
-                        >
-                          {ingredient.name}
+                  
+                  {ingredients.length > 0 ? (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex flex-wrap gap-1">
+                        {ingredients.map((ingredient, index) => (
+                          <span
+                            key={index}
+                            className={`inline-block px-2 py-1 rounded text-xs ${
+                              ingredient.is_key
+                                ? "bg-blue-100 text-blue-700 font-medium"
+                                : "bg-gray-200 text-gray-700"
+                            }`}
+                            title={`Position: ${ingredient.position || index + 1} | Source: ${ingredient.source}`}
+                          >
+                            {ingredient.name}
+                            {ingredient.is_key && ' ⭐'}
+                          </span>
+                        ))}
+                      </div>
+                      
+                      {/* Ingredient count summary */}
+                      <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-600">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded mr-2">
+                          {keyIngredients.length} Key Ingredients
                         </span>
-                      ))}
+                        <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                          {ingredients.length - keyIngredients.length} Regular Ingredients
+                        </span>
+                        <span className="ml-2">
+                          • Parsed from CSV ingredient list
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="bg-gray-50 rounded-lg p-4 text-center">
+                      <p className="text-gray-600">No ingredient data available</p>
+                      {product.ingredient_list_raw && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800">
+                            Show raw ingredient list
+                          </summary>
+                          <pre className="mt-2 text-xs text-gray-500 bg-white p-2 rounded border overflow-auto max-h-32">
+                            {product.ingredient_list_raw}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -914,10 +1067,35 @@ const ProductDetailPage = () => {
                 <h3 className="text-lg font-semibold mb-4">How to Use</h3>
                 <div className="prose prose-gray max-w-none">
                   <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                    {product.how_to_use ||
-                      "Usage instructions not available for this product."}
+                    {product.how_to_use || "Usage instructions not available for this product."}
                   </p>
                 </div>
+
+                {/* Key ingredient usage tips */}
+                {keyIngredients.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-medium text-gray-900 mb-3">Key Ingredient Tips</h4>
+                    <div className="space-y-2">
+                      {keyIngredients
+                        .filter(ing => ing.details && ing.details.category)
+                        .map((ingredient, index) => (
+                          <div key={index} className="bg-blue-50 border-l-4 border-blue-400 p-3">
+                            <span className="font-medium text-blue-900">
+                              {ingredient.details.display_name || ingredient.name}
+                            </span>
+                            <span className="text-blue-800 ml-2">
+                              ({ingredient.details.category})
+                            </span>
+                            {ingredient.details.description && (
+                              <p className="text-sm text-blue-700 mt-1">
+                                {ingredient.details.description}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -936,9 +1114,7 @@ const ProductDetailPage = () => {
                 >
                   <div className="aspect-square bg-gray-100">
                     <img
-                      src={
-                        similar.image_urls || "/images/placeholder-product.jpg"
-                      }
+                      src={similar.image || "/images/placeholder-product.jpg"}
                       alt={similar.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
@@ -948,7 +1124,7 @@ const ProductDetailPage = () => {
                   </div>
                   <div className="p-4">
                     <p className="text-sm text-gray-600 mb-1">
-                      {similar.brand_name}
+                      {similar.brand}
                     </p>
                     <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {similar.name}
