@@ -54,10 +54,10 @@ const RoutineGuidePage = () => {
           <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
             <Link to="/" className="hover:text-blue-600">Home</Link>
             <span>›</span>
-            <span className="text-gray-900">Routine Guide</span>
+            <span className="text-gray-900">Panduan Rutinitas</span>
           </nav>
           
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Skincare Routine Guide</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Panduan Rutinitas Skincare</h1>
           <p className="text-xl text-gray-600 max-w-3xl">{routineData.overview}</p>
         </div>
       </div>
@@ -65,7 +65,7 @@ const RoutineGuidePage = () => {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Basic Routine Order */}
         <div className="bg-white rounded-lg shadow-sm p-8">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Basic Routine Steps</h2>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Urutan Dasar Rutinitas</h2>
           <div className="space-y-6">
             {routineData.basic_routine_order.map((step, index) => (
               <div key={index} className="flex items-start space-x-4 p-4 border border-gray-200 rounded-lg">
@@ -92,7 +92,7 @@ const RoutineGuidePage = () => {
                   </div>
                   <p className="text-gray-700 mb-2">{step.purpose}</p>
                   <div className="text-sm text-gray-600">
-                    <strong>Product types:</strong> {step.product_types.join(', ')}
+                    <strong>Tipe produk:</strong> {step.product_types.join(', ')}
                   </div>
                 </div>
               </div>

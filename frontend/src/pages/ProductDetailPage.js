@@ -162,7 +162,7 @@ const ProductDetailPage = () => {
             safetyFlags.push({
               type: "warning",
               ingredient: keyIngredient.name,
-              message: `${keyIngredient.name} - use at night only and avoid during pregnancy`,
+              message: `${keyIngredient.name} - gunakan di malam hari dan hindari selama kehamilan`,
               source: "ingredient_analysis"
             });
           }
@@ -171,7 +171,7 @@ const ProductDetailPage = () => {
             safetyFlags.push({
               type: "info",
               ingredient: keyIngredient.name,
-              message: `${keyIngredient.name} - use sunscreen and start slowly`,
+              message: `${keyIngredient.name} - gunakan sunscreen dan mulai perlahan`,
               source: "ingredient_analysis"
             });
           }
@@ -535,7 +535,7 @@ const ProductDetailPage = () => {
               safetyFlags.push({
                 type: "info",
                 ingredient: ingredient.name,
-                message: `${ingredient.name} is an exfoliant - use sunscreen and start slowly`,
+                message: `${ingredient.name} is an exfoliant - gunnakan sunscreen dan mulai perlahan`,
                 source: "ontology_function",
               });
             }
@@ -547,7 +547,7 @@ const ProductDetailPage = () => {
               safetyFlags.push({
                 type: "warning",
                 ingredient: ingredient.name,
-                message: `${ingredient.name} is a retinoid - avoid during pregnancy, use at night only`,
+                message: `${ingredient.name} is a retinoid - hindari penggunaan di siang hari dan selama kehamilan`,
                 source: "ontology_function",
               });
             }
@@ -722,7 +722,7 @@ const ProductDetailPage = () => {
             <div className="flex items-center mb-3">
               <span className="text-yellow-600 mr-2">⚠️</span>
               <h4 className="font-semibold text-yellow-800">
-                Ingredient Interaction Warnings ({warnings.length})
+                Peringatan interaksi bahan ({warnings.length})
               </h4>
             </div>
             
@@ -868,9 +868,9 @@ const ProductDetailPage = () => {
                   <div className="flex items-center">
                     <span className="text-green-600 text-xl mr-3">🏛️</span>
                     <div>
-                      <h3 className="font-semibold text-green-800">BPOM Registered</h3>
+                      <h3 className="font-semibold text-green-800">Terdaftar BPOM</h3>
                       <p className="text-sm text-green-700">
-                        Registration Number: <span className="font-mono font-medium">{product.bpom_number}</span>
+                        Nomor Registrasi: <span className="font-mono font-medium">{product.bpom_number}</span>
                       </p>
                     </div>
                   </div>
@@ -897,7 +897,7 @@ const ProductDetailPage = () => {
               {/* Safety Analysis */}
               {safetyAnalysis && safetyAnalysis.flags.length > 0 && (
                 <div className="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-                  <h3 className="font-semibold text-yellow-800 mb-2">Usage Recommendations</h3>
+                  <h3 className="font-semibold text-yellow-800 mb-2">Rekomendasi Penggunaan</h3>
                   <div className="space-y-2">
                     {safetyAnalysis.flags.map((flag, index) => (
                       <div key={index} className="text-sm text-yellow-700">
@@ -911,7 +911,7 @@ const ProductDetailPage = () => {
               {/* Action Buttons */}
               <div className="flex space-x-4">
                 <button className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors">
-                  Add to Favorites ♡
+                  Tambahkan ke Favorit ♡
                 </button>
                 {product.product_url && (
                   <a
@@ -920,7 +920,7 @@ const ProductDetailPage = () => {
                     rel="noopener noreferrer"
                     className="flex-1 bg-gray-600 text-white py-3 px-6 rounded-lg hover:bg-gray-700 transition-colors text-center"
                   >
-                    Visit Store 🛒
+                    Kunjungi Toko 🛒
                   </a>
                 )}
               </div>
@@ -959,7 +959,7 @@ const ProductDetailPage = () => {
             {activeTab === "overview" && (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Product Description</h3>
+                  <h3 className="text-lg font-semibold mb-3">Deskripsi Produk</h3>
                   <p className="text-gray-700 leading-relaxed">
                     {product.description || "No description available for this product."}
                   </p>
@@ -967,13 +967,13 @@ const ProductDetailPage = () => {
 
                 {/* TAMBAH WARNING SECTION DI SINI */}
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Safety & Interactions</h3>
+                    <h3 className="text-lg font-semibold mb-3">Interaksi dan Peringatan</h3>
                     <WarningSection />
                   </div>
 
                 {product.suitable_for_skin_types && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Suitable For</h3>
+                    <h3 className="text-lg font-semibold mb-3">Cocok Untuk</h3>
                     <div className="flex flex-wrap gap-2">
                       {Array.isArray(product.suitable_for_skin_types) 
                         ? product.suitable_for_skin_types.map((skinType, index) => (
@@ -999,7 +999,7 @@ const ProductDetailPage = () => {
 
                 {product.addresses_concerns && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Addresses Concerns</h3>
+                    <h3 className="text-lg font-semibold mb-3">Masalah Kulit</h3>
                     <div className="flex flex-wrap gap-2">
                       {Array.isArray(product.addresses_concerns) 
                         ? product.addresses_concerns.map((concern, index) => (

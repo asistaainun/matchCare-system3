@@ -77,7 +77,7 @@ const SkinTypesPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-4">
-                Understanding Skin Types
+                Memahami Skin Types
               </h1>
               <p className="text-xl text-gray-600 max-w-3xl">
                 {educationData.overview}
@@ -95,11 +95,7 @@ const SkinTypesPage = () => {
                       : "bg-yellow-100 text-yellow-700"
                 }`}
               >
-                {dataSource === "hybrid"
-                  ? "Database + Content"
-                  : dataSource === "hardcoded_fallback"
-                    ? "Educational Content"
-                    : "Fallback Mode"}
+                
               </div>
             </div>
           </div>
@@ -130,11 +126,7 @@ const SkinTypesPage = () => {
                           {skinType.characteristics[0]}
                         </div>
                       </div>
-                      {skinType.product_count !== undefined && (
-                        <div className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                          {skinType.product_count} products
-                        </div>
-                      )}
+                      
                     </div>
                   </button>
                 ))}
@@ -153,19 +145,14 @@ const SkinTypesPage = () => {
                       {selectedSkinType.type} Skin
                     </h2>
 
-                    {/* Database Info Badge */}
-                    {selectedSkinType.database_info && (
-                      <div className="text-sm text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                        ✓ Verified in Database
-                      </div>
-                    )}
+                   
                   </div>
 
                   {/* Database Description (if available) */}
                   {selectedSkinType.database_info?.description && (
                     <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-400">
                       <h4 className="font-medium text-blue-900 mb-2">
-                        Database Definition:
+                        Definisi:
                       </h4>
                       <p className="text-blue-800">
                         {selectedSkinType.database_info.description}
@@ -177,7 +164,7 @@ const SkinTypesPage = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">
-                        Key Characteristics
+                        Karakteristik
                       </h4>
                       <ul className="space-y-2">
                         {selectedSkinType.characteristics.map((char, index) => (
@@ -191,23 +178,23 @@ const SkinTypesPage = () => {
 
                     <div>
                       <h4 className="font-semibold text-gray-900 mb-3">
-                        How to Identify
+                        Cara Mengidentifikasi
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div>
-                          <strong>Morning feel:</strong>{" "}
+                          <strong>Pagi:</strong>{" "}
                           {selectedSkinType.identification.morning_feel}
                         </div>
                         <div>
-                          <strong>Afternoon feel:</strong>{" "}
+                          <strong>Siang:</strong>{" "}
                           {selectedSkinType.identification.afternoon_feel}
                         </div>
                         <div>
-                          <strong>Pore size:</strong>{" "}
+                          <strong>Ukuran pori:</strong>{" "}
                           {selectedSkinType.identification.pore_size}
                         </div>
                         <div>
-                          <strong>Sensitivity:</strong>{" "}
+                          <strong>Sensitivitas:</strong>{" "}
                           {selectedSkinType.identification.sensitivity}
                         </div>
                       </div>
@@ -218,7 +205,7 @@ const SkinTypesPage = () => {
                 {/* Recommended Routine */}
                 <div className="bg-white rounded-lg shadow-sm p-8">
                   <h3 className="text-2xl font-semibold text-gray-900 mb-6">
-                    Recommended Routine
+                    Rutinistas skincare yang Disarankan
                   </h3>
                   <div className="space-y-4">
                     {selectedSkinType.recommended_routine.map((step, index) => (
@@ -260,7 +247,7 @@ const SkinTypesPage = () => {
                     </div>
 
                     <h4 className="font-semibold text-gray-900 mt-6 mb-3">
-                      Avoid These
+                      Yang Harus Dihindari
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedSkinType.avoid_ingredients.map(

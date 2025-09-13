@@ -313,7 +313,7 @@ class SkincareWarningEngine {
             return result.rows.map(alt => ({
                 alternative: this.capitalizeFirst(alt.name),
                 reason: `Similar function: ${alt.what_it_does}`,
-                howToUse: 'Use as substitute with similar concentration'
+                howToUse: 'Gunakan sesuai petunjuk pada produk'
             }));
             
         } catch (error) {
@@ -328,22 +328,22 @@ class SkincareWarningEngine {
     getGenericAlternatives(ingredientName) {
         const genericAlternatives = {
             'retinol': [
-                { alternative: 'Bakuchiol', reason: 'Natural retinol alternative', howToUse: 'Use morning or evening' },
-                { alternative: 'Retinyl Palmitate', reason: 'Gentler retinoid', howToUse: 'Start with lower concentration' }
+                { alternative: 'Bakuchiol', reason: 'Natural retinol alternative', howToUse: 'Gunakan sesuai petunjuk pada produk' },
+                { alternative: 'Retinyl Palmitate', reason: 'Gentler retinoid', howToUse: 'Mulai dengan konsentrasi lebih rendah' }
             ],
             'vitamin c': [
-                { alternative: 'Magnesium Ascorbyl Phosphate', reason: 'Stable Vitamin C form', howToUse: 'Less irritating option' },
-                { alternative: 'Kojic Acid', reason: 'Alternative brightening agent', howToUse: 'Use in evening routine' }
+                { alternative: 'Magnesium Ascorbyl Phosphate', reason: 'Stable Vitamin C form', howToUse: 'Opsi yang kurang mengiritasi' },
+                { alternative: 'Kojic Acid', reason: 'Alternative brightening agent', howToUse: 'Gunakan di malam hari' }
             ],
             'salicylic acid': [
-                { alternative: 'Lactic Acid', reason: 'Gentler exfoliant', howToUse: 'Start 2-3x per week' },
-                { alternative: 'Mandelic Acid', reason: 'Large molecule AHA', howToUse: 'Better for sensitive skin' }
+                { alternative: 'Lactic Acid', reason: 'Gentler exfoliant', howToUse: 'Mulai 2-3x per minggu' },
+                { alternative: 'Mandelic Acid', reason: 'Large molecule AHA', howToUse: 'Lebih baik untuk kulit sensitif' }
             ]
         };
         
         const alternatives = genericAlternatives[ingredientName.toLowerCase()];
         return alternatives || [
-            { alternative: 'Niacinamide', reason: 'Universal skin-friendly ingredient', howToUse: 'Safe for all skin types' }
+            { alternative: 'Niacinamide', reason: 'Universal skin-friendly ingredient', howToUse: 'Aman untuk semua jenis kulit' }
         ];
     }
 

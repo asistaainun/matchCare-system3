@@ -541,7 +541,7 @@ const IngredientsPage = () => {
               {/* What It Does */}
               {selectedIngredient.what_it_does && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">What It Does</h3>
+                  <h3 className="text-lg font-semibold mb-2">Apa yang Dilakukan</h3>
                   <p className="text-gray-700">
                     {selectedIngredient.what_it_does}
                   </p>
@@ -551,7 +551,7 @@ const IngredientsPage = () => {
               {/* Benefits */}
               {selectedIngredient.benefit && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Benefits</h3>
+                  <h3 className="text-lg font-semibold mb-2">Manfaat</h3>
                   <p className="text-gray-700">{selectedIngredient.benefit}</p>
                 </div>
               )}
@@ -560,7 +560,7 @@ const IngredientsPage = () => {
               {selectedIngredient.explanation && (
                 <div>
                   <h3 className="text-lg font-semibold mb-2">
-                    Detailed Information
+                    Informasi Lengkap
                   </h3>
                   <p className="text-gray-700">
                     {selectedIngredient.explanation}
@@ -572,7 +572,7 @@ const IngredientsPage = () => {
               {selectedIngredient.safety && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <h3 className="text-lg font-semibold mb-2 text-yellow-800">
-                    Safety Information
+                    Informasi Keamanan
                   </h3>
                   <p className="text-yellow-700">{selectedIngredient.safety}</p>
                 </div>
@@ -580,13 +580,13 @@ const IngredientsPage = () => {
 
               {/* Safety Badges in Modal */}
               <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold mb-3">Safety Profile</h3>
+                <h3 className="text-lg font-semibold mb-3">Profil Keamanan</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   <div
                     className={`p-3 rounded-lg text-center ${selectedIngredient.pregnancy_safe ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
                   >
                     <div className="text-2xl mb-1">
-                      {selectedIngredient.pregnancy_safe ? "✅" : "❓"}
+                      {selectedIngredient.pregnancy_safe ? "✅" : "❌"}
                     </div>
                     <div className="text-sm font-medium">Pregnancy Safe</div>
                   </div>
@@ -636,7 +636,7 @@ const IngredientsPage = () => {
               {/* Alternative Names */}
               {selectedIngredient.alternative_names && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Also Known As</h3>
+                  <h3 className="text-lg font-semibold mb-2">Dikenal Juga Dengan</h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedIngredient.alternative_names
                       .split(",")
@@ -656,7 +656,7 @@ const IngredientsPage = () => {
               {relatedProducts.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold mb-4">
-                    Products Containing {selectedIngredient.name}
+                    Produk yang Mengandung {selectedIngredient.name}
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {relatedProducts.map((product) => (
